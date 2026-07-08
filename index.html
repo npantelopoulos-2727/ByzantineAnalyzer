@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Live Interval Tuner</title>
+    <title>Byzantine Scale Run Analyzer</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -23,7 +23,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        h2 { color: #8a6d3b; margin-top: 0; text-align: center; }
+        h2 { color: #8a6d3b; margin-top: 0; }
         .setup-row { display: flex; gap: 15px; margin-bottom: 20px; }
         .form-group { flex: 1; }
         label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-bottom: 5px; }
@@ -32,42 +32,38 @@
         #recordBtn { background-color: #a94442; font-size: 16px; }
         #recordBtn.recording { background-color: #2e6da4; }
         
-        .tuner-display {
-            background: #111; color: #fff; padding: 25px; border-radius: 8px; text-align: center; margin: 20px 0;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        .live-status {
+            background: #222; color: #fff; padding: 15px; border-radius: 6px; text-align: center; margin: 15px 0; font-size: 18px;
         }
-        #noteLabel { font-size: 48px; font-weight: bold; color: #ffcc00; margin: 0; }
-        #freqLabel { font-size: 16px; color: #888; margin: 5px 0 15px 0; }
-        
-        /* Needle Meter styling */
-        .meter-container { position: relative; height: 20px; background: #333; border-radius: 10px; margin-top: 10px; overflow: hidden;}
-        .center-marker { position: absolute; left: 50%; width: 4px; height: 100%; background: #3c763d; transform: translateX(-50%); z-index: 2; }
-        .needle { position: absolute; left: 50%; top: 0; width: 6px; height: 100%; background: #ff3333; transform: translateX(-50%); transition: left 0.05s ease-out; z-index: 3; }
+        #currentDetected { color: #ffcc00; font-weight: bold; }
 
-        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .analysis-table th, .analysis-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 14px; }
+        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .analysis-table th, .analysis-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
         .analysis-table th { background-color: #f5f0e6; color: #8a6d3b; }
         
-        .active-row { background-color: #fff9e6; border: 2px solid #ffcc00 !important; }
-        .status-perfect { color: #3c763d; font-weight: bold; }
-        .status-sharp { color: #a94442; font-weight: bold; }
-        .status-flat { color: #31708f; font-weight: bold; }
+        .status-perfect { background-color: #dff0d8; color: #3c763d; font-weight: bold; border-radius: 4px; }
+        .status-sharp { background-color: #f2dede; color: #a94442; font-weight: bold; border-radius: 4px; }
+        .status-flat { background-color: #d9edf7; color: #31708f; font-weight: bold; border-radius: 4px; }
+        .untracked { color: #999; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Byzantine Live Interval Tuner</h2>
-    
+    <h2>Byzantine Scale Run Analyzer</h2>
+    <p style="font-size:14px; color:#555; margin-bottom:20px;">
+        <strong>Instructions:</strong> Select your base pitch, click the button, and sing the full scale from lower ΠΑ up to upper ΠΑ’. Click stop when finished to see your scorecard.
+    </p>
+
     <div class="setup-row">
         <div class="form-group">
-            <label>Scale (Tone I Diatonic)</label>
+            <label>Scale System</label>
             <select id="scaleSelect">
-                <option>10 - 8 - 12 - 12 - 10 - 8 - 12</option>
+                <option>Tone I (Diatonic: 10-8-12-12-10-8-12)</option>
             </select>
         </div>
         <div class="form-group">
-            <label>Base Pitch (Reference ΠΑ)</label>
+            <label>Base Pitch (ΠΑ Reference)</label>
             <select id="basePitch">
                 <option value="220">ΠΑ @ 220 Hz (Male Standard)</option>
                 <option value="110">ΠΑ @ 110 Hz (Deep Bass)</option>
@@ -76,26 +72,19 @@
         </div>
     </div>
 
-    <button id="recordBtn">🎤 Start Live Tracking</button>
+    <button id="recordBtn">🎤 Start Scale Run</button>
 
-    <div class="tuner-display">
-        <div id="noteLabel">--</div>
-        <div id="freqLabel">0.0 Hz</div>
-        <div id="deviationText" style="font-size:14px; font-style:italic; color:#aaa;">Click start and sing a tone...</div>
-        <div class="meter-container">
-            <div class="center-marker"></div>
-            <div id="needle" class="needle"></div>
-        </div>
+    <div class="live-status">
+        Listening status: <span id="currentDetected">Idle</span>
     </div>
 
     <table class="analysis-table">
         <thead>
             <tr>
-                <th>Byzantine Note</th>
-                <th>Interval (Moria)</th>
-                <th>Total Moria</th>
+                <th>Note</th>
+                <th>Target Moria</th>
                 <th>Target Freq</th>
-                <th>Live Status</th>
+                <th>Your Run Performance</th>
             </tr>
         </thead>
         <tbody id="analysisBody"></tbody>
@@ -106,14 +95,12 @@
     const recordBtn = document.getElementById('recordBtn');
     const basePitchSelect = document.getElementById('basePitch');
     const analysisBody = document.getElementById('analysisBody');
-    const noteLabel = document.getElementById('noteLabel');
-    const freqLabel = document.getElementById('freqLabel');
-    const deviationText = document.getElementById('deviationText');
-    const needle = document.getElementById('needle');
+    const currentDetected = document.getElementById('currentDetected');
 
     let audioCtx, analyser, stream, animationId;
-    let isListening = false;
+    let isRunning = false;
 
+    // Scale mapping structure (Moria cumulative counts)
     const steps = [
         { name: "ΠΑ", moria: 0 },
         { name: "ΒΟΥ", moria: 10 },
@@ -125,98 +112,94 @@
         { name: "ΠΑ’", moria: 72 }
     ];
 
-    function buildTable() {
+    // Storage array to record the deviations across the scale execution run
+    let scaleRunData = {};
+
+    function initTable() {
         const base = parseFloat(basePitchSelect.value);
         analysisBody.innerHTML = "";
         steps.forEach((step, idx) => {
             const targetF = base * Math.pow(2, step.moria / 72);
+            scaleRunData[idx] = []; // Clear old data arrays
+            
             const row = document.createElement('tr');
-            row.id = `row-${idx}`;
             row.innerHTML = `
                 <td><strong>${step.name}</strong></td>
-                <td>${idx === 0 ? '-' : steps[idx].moria - steps[idx-1].moria}</td>
                 <td>${step.moria}</td>
                 <td>${targetF.toFixed(1)} Hz</td>
-                <td id="status-${idx}">-</td>
+                <td id="score-${idx}" class="untracked">Not detected yet</td>
             `;
             analysisBody.appendChild(row);
         });
     }
 
-    buildTable();
-    basePitchSelect.addEventListener('change', buildTable);
+    initTable();
+    basePitchSelect.addEventListener('change', initTable);
 
     recordBtn.addEventListener('click', async () => {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        if (!isListening) {
+        if (!isRunning) {
+            initTable(); // Reset visual grid
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 2048; // Crisp sampling window for steady checking
+                analyser.fftSize = 1024; // Faster sampling windows for fluid reaction tracking
                 source.connect(analyser);
                 
-                isListening = true;
-                recordBtn.innerText = "🛑 Stop Listening";
+                isRunning = true;
+                recordBtn.innerText = "🛑 Stop & Calculate Scorecard";
                 recordBtn.classList.add('recording');
-                deviationText.innerText = "Sing and hold any interval note...";
+                currentDetected.innerText = "Listening... Sing scale now";
                 
-                loop();
+                processRun();
             } catch(e) {
-                alert("Microphone connection failed.");
+                alert("Microphone capture failed.");
             }
         } else {
-            isListening = false;
-            recordBtn.innerText = "🎤 Start Live Tracking";
+            isRunning = false;
+            recordBtn.innerText = "🎤 Start Scale Run";
             recordBtn.classList.remove('recording');
-            noteLabel.innerText = "--";
-            freqLabel.innerText = "0.0 Hz";
-            deviationText.innerText = "Analysis stopped.";
-            needle.style.left = "50%";
+            currentDetected.innerText = "Calculated!";
             cancelAnimationFrame(animationId);
             if (stream) stream.getTracks().forEach(t => t.stop());
-            clearActiveRows();
+            
+            finalizeScorecard();
         }
     });
 
-    function loop() {
-        if (!isListening) return;
-        animationId = requestAnimationFrame(loop);
+    function processRun() {
+        if (!isRunning) return;
+        animationId = requestAnimationFrame(processRun);
 
         const buffer = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(buffer);
 
-        const freq = autoCorrelateSample(buffer, audioCtx.sampleRate);
+        const freq = detectFundamentalFast(buffer, audioCtx.sampleRate);
         if (freq > 0) {
-            processLivePitch(freq);
+            matchNoteToScaleData(freq);
         }
     }
 
-    // High-precision pitch detection algorithm
-    function autoCorrelateSample(buffer, sampleRate) {
+    // High-speed auto-correlation logic for instant pitch tracking response
+    function detectFundamentalFast(buffer, sampleRate) {
         let size = buffer.length;
-        let rms = 0;
-        for (let i = 0; i < size; i++) rms += buffer[i] * buffer[i];
-        rms = Math.sqrt(rms / size);
-        if (rms < 0.02) return -1; // Ignore silence & soft breathing echoes
+        let sum = 0;
+        for (let i = 0; i < size; i++) sum += buffer[i] * buffer[i];
+        if (Math.sqrt(sum / size) < 0.015) return -1; // Volume gate filter
 
-        let r1 = 0, r2 = size - 1;
-        let thres = 0.2;
-        for (let i = 0; i < size / 2; i++) { if (Math.abs(buffer[i]) < thres) { r1 = i; break; } }
-        for (let i = size - 1; i >= size / 2; i--) { if (Math.abs(buffer[i]) < thres) { r2 = i; break; } }
-        let slicedBuffer = buffer.slice(r1, r2);
-        
-        let maxPeriod = Math.floor(sampleRate / 70);   // Min vocal range boundary
-        let minPeriod = Math.floor(sampleRate / 600);  // Max vocal range boundary
-        
         let bestPeriod = -1;
         let bestCorrelation = -1;
 
+        // Scan vocal frequency bounds (approx 70Hz - 600Hz)
+        let minPeriod = Math.floor(sampleRate / 600);
+        let maxPeriod = Math.floor(sampleRate / 70);
+
         for (let period = minPeriod; period < maxPeriod; period++) {
             let correlation = 0;
-            for (let i = 0; i < slicedBuffer.length - period; i++) {
-                correlation += slicedBuffer[i] * slicedBuffer[i + period];
+            for (let i = 0; i < size - period; i++) {
+                correlation += buffer[i] * buffer[i + period];
             }
             if (correlation > bestCorrelation) {
                 bestCorrelation = correlation;
@@ -226,64 +209,58 @@
         return bestPeriod !== -1 ? (sampleRate / bestPeriod) : -1;
     }
 
-    function clearActiveRows() {
-        steps.forEach((_, idx) => {
-            document.getElementById(`row-${idx}`).className = "";
-            document.getElementById(`status-${idx}`).innerText = "-";
-            document.getElementById(`status-${idx}`).className = "";
-        });
-    }
-
-    function processLivePitch(freq) {
+    function matchNoteToScaleData(freq) {
         const base = parseFloat(basePitchSelect.value);
-        // Turn the frequency into a live cumulative Moria position
-        const liveMoria = 72 * Math.log2(freq / base);
+        const calculatedMoria = 72 * Math.log2(freq / base);
 
         let closestIdx = -1;
         let minDiff = 999;
 
-        // Snapping window: determine which structural note the student is aiming for
         steps.forEach((step, idx) => {
-            let diff = Math.abs(liveMoria - step.moria);
-            if (diff < minDiff && diff < 6) { // Snapping tolerance parameter
+            let diff = Math.abs(calculatedMoria - step.moria);
+            if (diff < minDiff && diff < 5) { // 5 Moria snapping threshold boundary
                 minDiff = diff;
                 closestIdx = idx;
             }
         });
 
         if (closestIdx !== -1) {
-            clearActiveRows();
+            const deviation = calculatedMoria - steps[closestIdx].moria;
+            scaleRunData[closestIdx].push(deviation);
+            currentDetected.innerText = `Singing: ${steps[closestIdx].name} (${freq.toFixed(1)} Hz)`;
             
-            const targetStep = steps[closestIdx];
-            const deviation = liveMoria - targetStep.moria; // How far off from the microtonal target
-
-            // Highlight the row the student is currently hitting
-            document.getElementById(`row-${closestIdx}`).className = "active-row";
-            const statusCell = document.getElementById(`status-${closestIdx}`);
-
-            noteLabel.innerText = targetStep.name;
-            freqLabel.innerText = `${freq.toFixed(1)} Hz`;
-
-            // Needle pointer physics calculation (-3 to +3 Moria spectrum bounds)
-            let needlePosition = 50 + (deviation * 16.6); 
-            needlePosition = Math.max(5, Math.min(95, needlePosition));
-            needle.style.left = `${needlePosition}%`;
-
-            // Evaluate thresholds
-            if (Math.abs(deviation) <= 0.4) {
-                deviationText.innerText = "Perfect Intonation!";
-                statusCell.innerText = "Accurate";
-                statusCell.className = "status-perfect";
-            } else if (deviation > 0.4) {
-                deviationText.innerText = `Sharp (+${deviation.toFixed(1)} Moria)`;
-                statusCell.innerText = "Sharp";
-                statusCell.className = "status-sharp";
-            } else {
-                deviationText.innerText = `Flat (${deviation.toFixed(1)} Moria)`;
-                statusCell.innerText = "Flat";
-                statusCell.className = "status-flat";
-            }
+            // Mark cell visually as currently being recorded
+            document.getElementById(`score-${closestIdx}`).innerText = "Recording pitch data...";
+            document.getElementById(`score-${closestIdx}`).className = "";
         }
+    }
+
+    function finalizeScorecard() {
+        steps.forEach((step, idx) => {
+            const dataset = scaleRunData[idx];
+            const cell = document.getElementById(`score-${idx}`);
+            
+            if (dataset.length === 0) {
+                cell.innerText = "Skipped / Unregistered";
+                cell.className = "untracked";
+                return;
+            }
+
+            // Calculate median filter value to drop outlier notes caused by shifting vocal frames
+            dataset.sort((a, b) => a - b);
+            const avgDeviation = dataset[Math.floor(dataset.length / 2)];
+
+            if (Math.abs(avgDeviation) <= 0.4) {
+                cell.innerText = "Accurate ✔";
+                cell.className = "status-perfect";
+            } else if (avgDeviation > 0.4) {
+                cell.innerText = `Sharp (+${avgDeviation.toFixed(1)} Moria)`;
+                cell.className = "status-sharp";
+            } else {
+                cell.innerText = `Flat (${avgDeviation.toFixed(1)} Moria)`;
+                cell.className = "status-flat";
+            }
+        });
     }
 </script>
 </body>
