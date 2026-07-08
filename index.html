@@ -2,152 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Byzantine Interval Analyzer</title>
+    <title>Byzantine Analyzer Test</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .controls {
-            margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        #recordBtn {
-            background-color: #d9534f;
-            color: white;
-        }
-        #recordBtn.recording {
-            background-color: #222;
-            animation: pulse 1s infinite;
-        }
-        #playBtn {
-            background-color: #5cb85c;
-            color: white;
-        }
-        #playBtn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        #status {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 10px;
-            font-style: italic;
-        }
-        canvas {
-            width: 100%;
-            max-width: 600px;
-            height: 200px;
-            background-color: #111;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f0f0; }
+        button { padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        #status { margin-top: 20px; font-size: 16px; color: #333; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="controls">
-        <button id="recordBtn">🎤 Start Listening</button>
-        <button id="playBtn" disabled>▶ Play Back</button>
-    </div>
-    <div id="status">Ready to train...</div>
-    <canvas id="visualizer"></canvas>
+    <button id="testBtn">🎤 Request Microphone & Start Test</button>
+    <div id="status">Status: Waiting for click...</div>
 
     <script>
-        const recordBtn = document.getElementById('recordBtn');
-        const playBtn = document.getElementById('playBtn');
-        const statusText = document.getElementById('status');
-        const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
-
-        let audioCtx;
-        let analyser;
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioUrl;
-        let audioAudio;
-        let isRecording = false;
-        let animationFrameId;
-
-        // Set canvas resolution
-        canvas.width = 600;
-        canvas.height = 200;
-
-        recordBtn.addEventListener('click', async () => {
-            if (!isRecording) {
-                // Start Recording & Analyzing
-                try {
-                    // const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-                    // Replace the old getUserMedia line with this:
-                    const getAudioStream = navigator.mediaDevices?.getUserMedia || 
-                                           navigator.webkitGetUserMedia || 
-                                           navigator.mozGetUserMedia;
-                    
-                    if (!getAudioStream) {
-                        statusText.innerText = "Error: Your browser does not support audio recording.";
-                        return;
-                    }
-                    
-                    // const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    
-                    
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioCtx.createMediaStreamSource(stream);
-                    
-                    analyser = audioCtx.createAnalyser();
-                    analyser.fftSize = 2048; // High resolution for interval detection
-                    source.connect(analyser);
-
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-                    
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        audioUrl = URL.createObjectURL(audioBlob);
-                        audioAudio = new Audio(audioUrl);
-                        playBtn.disabled = false;
-                        statusText.innerText = "Recording saved. Click 'Play Back' to review.";
-                    };
-
-                    mediaRecorder.start();
-                    isRecording = true;
-                    recordBtn.innerText = "🛑 Stop & Save";
-                    recordBtn.classList.add('recording');
-                    statusText.innerText = "Listening and analyzing frequencies...";
-                    
-                    drawSpectrum();
-                } catch (err) {
-                    console.error("Microphone access denied or error:", err);
-                    statusText.innerText = "Error: Microphone access required.";
-                }
-            } else {
-                // Stop Recording
-                mediaRecorder.stop();
-                isRecording = false;
-                recordBtn.innerText = "🎤 Start Listening";
-                recordBtn.classList.remove
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const status = document.getElementById('status');
+            status.innerText = "Status: Requesting permission...";
+            
+            try {
+                // Force an Audio Context instantiation on click
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioContext();
+                
+                // Request stream
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                status.style.color = "green";
+                status.innerText = "Success! Microphone connected. Audio Context State: " + ctx.state;
+                
+                // Stop the stream immediately just to clean up the test
+                stream.getTracks().forEach(track => track.stop());
+                
+            } catch (err) {
+                status.style.color = "red";
+                status.innerText = "Error Name: " + err.name + " | Message: " + err.message;
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>
