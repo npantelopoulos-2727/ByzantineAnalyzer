@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Interval Analyzer</title>
+    <title>Byzantine Interval Tuner & Analyzer</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: #fcfbf7;
             color: #333;
             margin: 0;
@@ -15,206 +15,316 @@
             flex-direction: column;
             align-items: center;
         }
-        h2 {
-            color: #8a6d3b;
-            margin-bottom: 5px;
+        h2 { color: #8a6d3b; margin-bottom: 5px; }
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        .subtitle {
-            font-size: 14px;
-            color: #777;
-            margin-bottom: 20px;
-        }
-        .controls {
-            margin-bottom: 20px;
+        .setup-row {
             display: flex;
             gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        label { font-weight: bold; font-size: 14px; color: #555; display: block; margin-bottom: 5px; }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
         button {
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: none; cursor: pointer; font-weight: bold; color: white; transition: background 0.2s;
         }
-        #recordBtn {
-            background-color: #a94442;
-            color: white;
-        }
-        #recordBtn.recording {
-            background-color: #31708f;
-            animation: pulse 1.5s infinite;
-        }
-        #playBtn {
-            background-color: #3c763d;
-            color: white;
-        }
-        #playBtn:disabled {
-            background-color: #cccccc;
-            color: #666666;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        #status {
-            font-size: 15px;
-            margin-bottom: 15px;
-            font-style: italic;
-            font-weight: 500;
-        }
-        canvas {
-            width: 100%;
-            max-width: 600px;
-            height: 220px;
-            background-color: #1a1a1a;
+        #recordBtn { background-color: #a94442; }
+        #recordBtn.recording { background-color: #31708f; }
+        
+        .live-display {
+            background: #1a1a1a;
+            color: #00ffcc;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+            margin-bottom: 20px;
         }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
+        #liveNote { font-size: 36px; font-weight: bold; color: #ffcc00; }
+        #liveFreq { font-size: 16px; color: #aaa; margin-top: 5px; }
+        #deviationBar {
+            height: 10px; background: #333; border-radius: 5px; margin-top: 15px; position: relative; overflow: hidden;
         }
+        #deviationPointer {
+            width: 6px; height: 10px; background: #ff3333; position: absolute; left: 50%; transform: translateX(-50%); transition: left 0.1s ease;
+        }
+        
+        .analysis-table {
+            width: 100%; border-collapse: collapse; margin-top: 15px;
+        }
+        .analysis-table th, .analysis-table td {
+            border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 14px;
+        }
+        .analysis-table th { background-color: #f5f0e6; color: #8a6d3b; }
+        .status-perfect { color: #3c763d; font-weight: bold; }
+        .status-sharp { color: #a94442; font-weight: bold; }
+        .status-flat { color: #31708f; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>Byzantine Music Interval Analyzer</h2>
-    <div class="subtitle">Microtonal Pitch & Tonality Feedback</div>
+<div class="container">
+    <h2>Byzantine Interval Analyzer</h2>
+    <p style="font-size:13px; color:#666;">Select your base target frequency, click listen, and practice your steps.</p>
 
-    <div class="controls">
-        <button id="recordBtn">🎤 Start Listening</button>
-        <button id="playBtn" disabled>▶ Play Back</button>
+    <div class="setup-row">
+        <div class="form-group">
+            <label for="toneSelect">Scale / Mode</label>
+            <select id="toneSelect">
+                <option value="diatonic">Tone I (Diatonic: 10-8-12-12-10-8-12)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="basePitch">Base Pitch (ΝΗ / ΠΑ)</label>
+            <select id="basePitch">
+                <option value="220">ΠΑ @ 220 Hz (Standard Male)</option>
+                <option value="440">ΠΑ @ 440 Hz (Standard Female/High)</option>
+                <option value="193.3">ΝΗ @ 193.3 Hz (Traditional)</option>
+            </select>
+        </div>
     </div>
-    <div id="status">Ready to train...</div>
-    <canvas id="visualizer"></canvas>
 
-    <script>
-        const recordBtn = document.getElementById('recordBtn');
-        const playBtn = document.getElementById('playBtn');
-        const statusText = document.getElementById('status');
-        const canvas = document.getElementById('visualizer');
-        const canvasCtx = canvas.getContext('2d');
+    <button id="recordBtn">🎤 Start Listening & Analyzing</button>
 
-        let audioCtx;
-        let analyser;
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioUrl;
-        let audioAudio;
-        let isRecording = false;
-        let animationFrameId;
-        let globalStream;
+    <div class="live-display" style="margin-top: 20px;">
+        <div id="liveNote">--</div>
+        <div id="liveFreq">0.0 Hz</div>
+        <div id="deviationText">Stabilize voice to detect step</div>
+        <div id="deviationBar"><div id="deviationPointer"></div></div>
+    </div>
 
-        canvas.width = 600;
-        canvas.height = 220;
+    <h3>Target Byzantine Structural Notes (Moria from Base)</h3>
+    <table class="analysis-table">
+        <thead>
+            <tr>
+                <th>Note Name</th>
+                <th>Interval (Moria)</th>
+                <th>Cumulative Moria</th>
+                <th>Target Freq</th>
+                <th>Your Accuracy</th>
+            </tr>
+        </thead>
+        <tbody id="analysisBody">
+            </tbody>
+    </table>
+</div>
 
-        recordBtn.addEventListener('click', async () => {
-            // 1. Safe Initialize Audio Context on click
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-            }
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
+<script>
+    const recordBtn = document.getElementById('recordBtn');
+    const toneSelect = document.getElementById('toneSelect');
+    const basePitchSelect = document.getElementById('basePitch');
+    const liveNote = document.getElementById('liveNote');
+    const liveFreq = document.getElementById('liveFreq');
+    const deviationPointer = document.getElementById('deviationPointer');
+    const deviationText = document.getElementById('deviationText');
+    const analysisBody = document.getElementById('analysisBody');
 
-            if (!isRecording) {
-                try {
-                    statusText.innerText = "Requesting microphone...";
-                    statusText.style.color = "#333";
+    let audioCtx, analyser, globalStream, animationFrameId;
+    let isListening = false;
 
-                    // 2. Capture Audio Stream
-                    globalStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    
-                    const source = audioCtx.createMediaStreamSource(globalStream);
-                    analyser = audioCtx.createAnalyser();
-                    analyser.fftSize = 2048; // Balanced resolution for pitch detection
-                    source.connect(analyser);
+    // Byzantine 72 Moria System Constants
+    // Tone I Diatonic steps starting from ΠΑ: ΠΑ(0), ΒΟΥ(10), ΓΑ(18), ΔΙ(30), ΚΕ(42), ΖΩ(52), ΝΗ(60), ΠΑ'(72)
+    const diatonicScale = [
+        { name: "ΠΑ (Base)", step: 0 },
+        { name: "ΒΟΥ", step: 10 },
+        { name: "ΓΑ", step: 8 },
+        { name: "ΔΙ", step: 12 },
+        { name: "ΚΕ", step: 12 },
+        { name: "ΖΩ", step: 10 },
+        { name: "ΝΗ", step: 8 },
+        { name: "ΠΑ'", step: 12 }
+    ];
 
-                    // 3. Setup Recording Media
-                    mediaRecorder = new MediaRecorder(globalStream);
-                    audioChunks = [];
-                    
-                    mediaRecorder.ondataavailable = event => {
-                        if (event.data.size > 0) audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        audioUrl = URL.createObjectURL(audioBlob);
-                        audioAudio = new Audio(audioUrl);
-                        playBtn.disabled = false;
-                        statusText.innerText = "Analysis stopped. Click 'Play Back' to review your intervals.";
-                        statusText.style.color = "#3c763d";
-                    };
-
-                    // Start actual recording
-                    mediaRecorder.start();
-                    isRecording = true;
-                    recordBtn.innerText = "🛑 Stop & Save";
-                    recordBtn.classList.add('recording');
-                    statusText.innerText = "Sing your scale intervals now...";
-                    
-                    drawSpectrum();
-                } catch (err) {
-                    console.error(err);
-                    statusText.innerText = "Error: " + err.message;
-                    statusText.style.color = "#a94442";
-                }
-            } else {
-                // Stop everything safely
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                if (globalStream) {
-                    globalStream.getTracks().forEach(track => track.stop());
-                }
-                isRecording = false;
-                recordBtn.innerText = "🎤 Start Listening";
-                recordBtn.classList.remove('recording');
-                cancelAnimationFrame(animationFrameId);
-            }
-        });
-
-        playBtn.addEventListener('click', () => {
-            if (audioAudio) {
-                audioAudio.play();
-                statusText.innerText = "Playing back audio...";
-                audioAudio.onended = () => {
-                    statusText.innerText = "Playback finished.";
-                };
-            }
-        });
-
-        function drawSpectrum() {
-            if (!isRecording) return;
+    function calculateTargetFrequencies() {
+        const baseFreq = parseFloat(basePitchSelect.value);
+        analysisBody.innerHTML = "";
+        
+        let cumulativeMoria = 0;
+        diatonicScale.forEach((note, index) => {
+            cumulativeMoria += note.step;
             
-            animationFrameId = requestAnimationFrame(drawSpectrum);
-            
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
+            // Frequency calculation based on log-interval system of 72 Moria per octave
+            // Freq = Base * 2^(Moria / 72)
+            const targetFreq = baseFreq * Math.pow(2, cumulativeMoria / 72);
+            note.targetFreq = targetFreq;
+            note.cumulativeMoria = cumulativeMoria;
 
-            // Background
-            canvasCtx.fillStyle = '#1a1a1a';
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            const row = document.createElement('tr');
+            row.id = `note-row-${index}`;
+            row.innerHTML = `
+                <td><strong>${note.name}</strong></td>
+                <td>${note.step === 0 ? '-' : note.step}</td>
+                <td>${cumulativeMoria}</td>
+                <td>${targetFreq.toFixed(1)} Hz</td>
+                <td class="accuracy-cell" id="accuracy-${index}">-</td>
+            `;
+            analysisBody.appendChild(row);
+        });
+    }
 
-            const barWidth = (canvas.width / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
+    // Initialize layout tables
+    calculateTargetFrequencies();
+    basePitchSelect.addEventListener('change', calculateTargetFrequencies);
 
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
+    recordBtn.addEventListener('click', async () => {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        if (!isListening) {
+            try {
+                globalStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioCtx.createMediaStreamSource(globalStream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 2048;
+                source.connect(analyser);
 
-                // Warm gold/amber spectrum colors matching traditional Byzantine aesthetics
-                canvasCtx.fillStyle = `rgb(${barHeight + 130}, ${barHeight + 75}, 35)`;
-                canvasCtx.fillRect(x, canvas.height - barHeight / 1.3, barWidth, barHeight / 1.3);
+                isListening = true;
+                recordBtn.innerText = "🛑 Stop Tracking";
+                recordBtn.classList.add('recording');
+                
+                trackPitch();
+            } catch (err) {
+                alert("Microphone error: " + err.message);
+            }
+        } else {
+            isListening = false;
+            recordBtn.innerText = "🎤 Start Listening & Analyzing";
+            recordBtn.classList.remove('recording');
+            cancelAnimationFrame(animationFrameId);
+            if (globalStream) globalStream.getTracks().forEach(track => track.stop());
+        }
+    });
 
-                x += barWidth + 1;
+    function trackPitch() {
+        if (!isListening) return;
+        animationFrameId = requestAnimationFrame(trackPitch);
+
+        const bufferLength = analyser.fftSize;
+        const buffer = new Float32Array(bufferLength);
+        analyser.getFloatTimeDomainData(buffer);
+
+        // Core Pitch Detection: Autocorrelation algorithm (YIN/AMDF light fallback)
+        const sampleRate = audioCtx.sampleRate;
+        const r = autoCorrelate(buffer, sampleRate);
+
+        if (r !== -1 && r > 60 && r < 1000) { // Limit vocal registers
+            liveFreq.innerText = `${r.toFixed(1)} Hz`;
+            evaluateByzantinePitch(r);
+        }
+    }
+
+    function autoCorrelate(buffer, sampleRate) {
+        let SIZE = buffer.length;
+        let maxSamples = Math.floor(SIZE / 2);
+        let bestOffset = -1;
+        let bestCorrelation = 0;
+        let rms = 0;
+
+        for (let i = 0; i < SIZE; i++) {
+            let val = buffer[i];
+            rms += val * val;
+        }
+        rms = Math.sqrt(rms / SIZE);
+        if (rms < 0.01) return -1; // Audio too quiet
+
+        let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+        for (let i = 0; i < maxSamples; i++) {
+            if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+        }
+        for (let i = SIZE - 1; i >= maxSamples; i--) {
+            if (Math.abs(buffer[i]) < thres) { r2 = i; break; }
+        }
+        buffer = buffer.slice(r1, r2);
+        SIZE = buffer.length;
+
+        let correlations = new Float32Array(maxSamples);
+        for (let offset = 0; offset < maxSamples; offset++) {
+            let correlation = 0;
+            for (let i = 0; i < maxSamples; i++) {
+                correlation += Math.abs((buffer[i]) - (buffer[i + offset]));
+            }
+            correlations[offset] = correlation;
+        }
+        
+        let minVal = 1000, minOffset = -1;
+        for (let i = 1; i < maxSamples; i++) {
+            if (correlations[i] < minVal) {
+                minVal = correlations[i];
+                minOffset = i;
             }
         }
-    </script>
+
+        if (minOffset !== -1) {
+            return sampleRate / minOffset;
+        }
+        return -1;
+    }
+
+    function evaluateByzantinePitch(currentFreq) {
+        const baseFreq = parseFloat(basePitchSelect.value);
+        
+        // Find current total Moria distance from base
+        // Moria = 72 * log2(CurrentFreq / BaseFreq)
+        const currentMoria = 72 * Math.log2(currentFreq / baseFreq);
+
+        // Map to closest note structure
+        let closestNoteIndex = 0;
+        let minDiff = 999;
+
+        diatonicScale.forEach((note, index) => {
+            let diff = Math.abs(currentMoria - note.cumulativeMoria);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestNoteIndex = index;
+            }
+        });
+
+        const targetNote = diatonicScale[closestNoteIndex];
+        const moriaDeviation = currentMoria - targetNote.cumulativeMoria;
+
+        // UI Feedback updates
+        liveNote.innerText = targetNote.name;
+        
+        // Dynamic Pointer positioning (-3 to +3 Moria deviation spectrum mapping)
+        let percent = 50 + (moriaDeviation * 16.6); // Scale to visual bounds
+        percent = Math.max(5, Math.min(95, percent));
+        deviationPointer.style.left = `${percent}%`;
+
+        const cell = document.getElementById(`accuracy-${closestNoteIndex}`);
+        
+        // Critical Thresholds for Microtones
+        // 1 Moria unit is approximately 16.6 cents. 
+        if (Math.abs(moriaDeviation) < 0.4) {
+            deviationText.innerText = "Perfect Intonation!";
+            cell.innerText = "Accurate";
+            cell.className = "accuracy-cell status-perfect";
+        } else if (moriaDeviation >= 0.4) {
+            deviationText.innerText = `Sharp (+${moriaDeviation.toFixed(1)} Moria)`;
+            cell.innerText = "Sharp";
+            cell.className = "accuracy-cell status-sharp";
+        } else {
+            deviationText.innerText = `Flat (${moriaDeviation.toFixed(1)} Moria)`;
+            cell.innerText = "Flat";
+            cell.className = "accuracy-cell status-flat";
+        }
+    }
+</script>
 </body>
 </html>
