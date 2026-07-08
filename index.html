@@ -2,46 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Music Interval Analyzer</title>
+    <title>Byzantine Interval Analyzer</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9f6f0;
-            color: #333;
+            background-color: #f9f9f9;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .container {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-        }
-        h2 {
-            color: #8b5a2b; /* Byzantine-inspired gold/earth tone */
-            margin-top: 0;
-        }
         .controls {
-            margin: 20px 0;
+            margin-bottom: 15px;
             display: flex;
-            justify-content: center;
-            gap: 15px;
+            gap: 10px;
         }
         button {
-            padding: 12px 24px;
+            padding: 10px 20px;
             font-size: 16px;
             font-weight: bold;
             border: none;
-            border-radius: 8px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.2s;
         }
         #recordBtn {
             background-color: #d9534f;
@@ -49,168 +33,108 @@
         }
         #recordBtn.recording {
             background-color: #222;
-            animation: pulse 1.5s infinite;
+            animation: pulse 1s infinite;
         }
         #playBtn {
             background-color: #5cb85c;
             color: white;
         }
-        button:disabled {
-            background-color: #ccc !important;
+        #playBtn:disabled {
+            background-color: #cccccc;
             cursor: not-allowed;
+        }
+        #status {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+            font-style: italic;
         }
         canvas {
             width: 100%;
+            max-width: 600px;
             height: 200px;
             background-color: #111;
             border-radius: 8px;
-            margin-top: 15px;
-        }
-        .status {
-            font-style: italic;
-            color: #666;
-            margin-top: 10px;
-            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Byzantine Interval Analyzer</h2>
-    <p>Sing into your microphone to view the frequency spectrum. Record your tone to listen back and analyze your accuracy.</p>
-    
     <div class="controls">
-        <button id="recordBtn">Start Listening & Recording</button>
-        <button id="playBtn" disabled>Play Back</button>
+        <button id="recordBtn">🎤 Start Listening</button>
+        <button id="playBtn" disabled>▶ Play Back</button>
     </div>
-    
-    <div class="status" id="statusText">Ready to start...</div>
-    <canvas id="analyzerCanvas"></canvas>
-</div>
+    <div id="status">Ready to train...</div>
+    <canvas id="visualizer"></canvas>
 
-<script>
-    const recordBtn = document.getElementById('recordBtn');
-    const playBtn = document.getElementById('playBtn');
-    const statusText = document.getElementById('statusText');
-    const canvas = document.getElementById('analyzerCanvas');
-    const canvasCtx = canvas.getContext('2d');
+    <script>
+        const recordBtn = document.getElementById('recordBtn');
+        const playBtn = document.getElementById('playBtn');
+        const statusText = document.getElementById('status');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
 
-    let audioCtx;
-    let analyser;
-    let mediaRecorder;
-    let audioChunks = [];
-    let audioBlob;
-    let audioUrl;
-    let playbackAudio;
-    let stream;
-    let animationId;
-    let isRecording = false;
+        let audioCtx;
+        let analyser;
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioUrl;
+        let audioAudio;
+        let isRecording = false;
+        let animationFrameId;
 
-    // Set canvas resolution
-    canvas.width = canvas.clientWidth * window.devicePixelRatio;
-    canvas.height = canvas.clientHeight * window.devicePixelRatio;
+        // Set canvas resolution
+        canvas.width = 600;
+        canvas.height = 200;
 
-    recordBtn.addEventListener('click', async () => {
-        if (!isRecording) {
-            // Start Recording / Listening
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // Set up Web Audio API for Spectrum Analyzer
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioCtx.createMediaStreamSource(stream);
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 2048; // Higher values = more precise frequency breakdown
-                source.connect(analyser);
+        recordBtn.addEventListener('click', async () => {
+            if (!isRecording) {
+                // Start Recording & Analyzing
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    
+                    analyser = audioCtx.createAnalyser();
+                    analyser.fftSize = 2048; // High resolution for interval detection
+                    source.connect(analyser);
 
-                // Set up MediaRecorder for Playback
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
 
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    audioUrl = URL.createObjectURL(audioBlob);
-                    playbackAudio = new Audio(audioUrl);
-                    playBtn.disabled = false;
-                    statusText.innerText = "Recording saved. Click 'Play Back' to listen.";
-                };
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        audioUrl = URL.createObjectURL(audioBlob);
+                        audioAudio = new Audio(audioUrl);
+                        playBtn.disabled = false;
+                        statusText.innerText = "Recording saved. Click 'Play Back' to review.";
+                    };
 
-                mediaRecorder.start();
-                drawSpectrum();
-                
-                isRecording = true;
-                recordBtn.innerText = "Stop & Save";
-                recordBtn.classList.add('recording');
-                playBtn.disabled = true;
-                statusText.innerText = "Listening and recording tone details...";
-
-            } catch (err) {
-                console.error("Microphone access denied or error:", err);
-                statusText.innerText = "Error: Microphone access denied or unsupported.";
-            }
-        } else {
-            // Stop Recording / Listening
-            mediaRecorder.stop();
-            stream.getTracks().forEach(track => track.stop());
-            cancelAnimationFrame(animationId);
-            if (audioCtx) audioCtx.close();
-            
-            isRecording = false;
-            recordBtn.innerText = "Start Listening & Recording";
-            recordBtn.classList.remove('recording');
-        }
-    });
-
-    playBtn.addEventListener('click', () => {
-        if (playbackAudio) {
-            playbackAudio.play();
-            statusText.innerText = "Playing back recorded pitch...";
-            playbackAudio.onended = () => {
-                statusText.innerText = "Playback finished.";
-            };
-        }
-    });
-
-    function drawSpectrum() {
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        
-        const draw = () => {
-            animationId = requestAnimationFrame(draw);
-            analyser.getByteFrequencyData(dataArray);
-
-            // Clear canvas
-            canvasCtx.fillStyle = '#111';
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const barWidth = (canvas.width / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
-
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i];
-
-                // Color gradient based on frequency index (helps visualize microtonal variations)
-                const hue = (i / bufferLength) * 360;
-                canvasCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-
-                canvasCtx.fillRect(x, canvas.height - barHeight * (canvas.height / 255), barWidth, barHeight * (canvas.height / 255));
-                x += barWidth + 1;
-            }
-        };
-        draw();
-    }
-</script>
-
-</body>
-</html>
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordBtn.innerText = "🛑 Stop & Save";
+                    recordBtn.classList.add('recording');
+                    statusText.innerText = "Listening and analyzing frequencies...";
+                    
+                    drawSpectrum();
+                } catch (err) {
+                    console.error("Microphone access denied or error:", err);
+                    statusText.innerText = "Error: Microphone access required.";
+                }
+            } else {
+                // Stop Recording
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.innerText = "🎤 Start Listening";
+                recordBtn.classList.remove
