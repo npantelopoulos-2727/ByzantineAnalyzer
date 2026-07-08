@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Interval Tuner & Analyzer</title>
+    <title>Byzantine Scale Run Analyzer</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -15,7 +15,6 @@
             flex-direction: column;
             align-items: center;
         }
-        h2 { color: #8a6d3b; margin-bottom: 5px; }
         .container {
             width: 100%;
             max-width: 650px;
@@ -24,306 +23,244 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        .setup-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .form-group {
-            flex: 1;
-            min-width: 150px;
-        }
-        label { font-weight: bold; font-size: 14px; color: #555; display: block; margin-bottom: 5px; }
-        select, button {
-            width: 100%;
-            padding: 10px;
-            font-size: 15px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        button {
-            border: none; cursor: pointer; font-weight: bold; color: white; transition: background 0.2s;
-        }
-        #recordBtn { background-color: #a94442; }
-        #recordBtn.recording { background-color: #31708f; }
+        h2 { color: #8a6d3b; margin-top: 0; }
+        .setup-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .form-group { flex: 1; }
+        label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-bottom: 5px; }
+        select, button { width: 100%; padding: 12px; font-size: 15px; border-radius: 5px; border: 1px solid #ccc; }
+        button { border: none; cursor: pointer; font-weight: bold; color: white; }
+        #recordBtn { background-color: #a94442; font-size: 16px; }
+        #recordBtn.recording { background-color: #2e6da4; }
         
-        .live-display {
-            background: #1a1a1a;
-            color: #00ffcc;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 20px;
+        .live-status {
+            background: #222; color: #fff; padding: 15px; border-radius: 6px; text-align: center; margin: 15px 0; font-size: 18px;
         }
-        #liveNote { font-size: 36px; font-weight: bold; color: #ffcc00; }
-        #liveFreq { font-size: 16px; color: #aaa; margin-top: 5px; }
-        #deviationBar {
-            height: 10px; background: #333; border-radius: 5px; margin-top: 15px; position: relative; overflow: hidden;
-        }
-        #deviationPointer {
-            width: 6px; height: 10px; background: #ff3333; position: absolute; left: 50%; transform: translateX(-50%); transition: left 0.1s ease;
-        }
-        
-        .analysis-table {
-            width: 100%; border-collapse: collapse; margin-top: 15px;
-        }
-        .analysis-table th, .analysis-table td {
-            border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 14px;
-        }
+        #currentDetected { color: #ffcc00; font-weight: bold; }
+
+        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .analysis-table th, .analysis-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
         .analysis-table th { background-color: #f5f0e6; color: #8a6d3b; }
-        .status-perfect { color: #3c763d; font-weight: bold; }
-        .status-sharp { color: #a94442; font-weight: bold; }
-        .status-flat { color: #31708f; font-weight: bold; }
+        
+        .status-perfect { background-color: #dff0d8; color: #3c763d; font-weight: bold; border-radius: 4px; }
+        .status-sharp { background-color: #f2dede; color: #a94442; font-weight: bold; border-radius: 4px; }
+        .status-flat { background-color: #d9edf7; color: #31708f; font-weight: bold; border-radius: 4px; }
+        .untracked { color: #999; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Byzantine Interval Analyzer</h2>
-    <p style="font-size:13px; color:#666;">Select your base target frequency, click listen, and practice your steps.</p>
+    <h2>Byzantine Scale Run Analyzer</h2>
+    <p style="font-size:14px; color:#555; margin-bottom:20px;">
+        <strong>Instructions:</strong> Select your base pitch, click the button, and sing the full scale from lower ΠΑ up to upper ΠΑ’. Click stop when finished to see your scorecard.
+    </p>
 
     <div class="setup-row">
         <div class="form-group">
-            <label for="toneSelect">Scale / Mode</label>
-            <select id="toneSelect">
-                <option value="diatonic">Tone I (Diatonic: 10-8-12-12-10-8-12)</option>
+            <label>Scale System</label>
+            <select id="scaleSelect">
+                <option>Tone I (Diatonic: 10-8-12-12-10-8-12)</option>
             </select>
         </div>
         <div class="form-group">
-            <label for="basePitch">Base Pitch (ΝΗ / ΠΑ)</label>
+            <label>Base Pitch (ΠΑ Reference)</label>
             <select id="basePitch">
-                <option value="220">ΠΑ @ 220 Hz (Standard Male)</option>
-                <option value="440">ΠΑ @ 440 Hz (Standard Female/High)</option>
-                <option value="193.3">ΝΗ @ 193.3 Hz (Traditional)</option>
+                <option value="220">ΠΑ @ 220 Hz (Male Standard)</option>
+                <option value="110">ΠΑ @ 110 Hz (Deep Bass)</option>
+                <option value="440">ΠΑ @ 440 Hz (Female Standard)</option>
             </select>
         </div>
     </div>
 
-    <button id="recordBtn">🎤 Start Listening & Analyzing</button>
+    <button id="recordBtn">🎤 Start Scale Run</button>
 
-    <div class="live-display" style="margin-top: 20px;">
-        <div id="liveNote">--</div>
-        <div id="liveFreq">0.0 Hz</div>
-        <div id="deviationText">Stabilize voice to detect step</div>
-        <div id="deviationBar"><div id="deviationPointer"></div></div>
+    <div class="live-status">
+        Listening status: <span id="currentDetected">Idle</span>
     </div>
 
-    <h3>Target Byzantine Structural Notes (Moria from Base)</h3>
     <table class="analysis-table">
         <thead>
             <tr>
-                <th>Note Name</th>
-                <th>Interval (Moria)</th>
-                <th>Cumulative Moria</th>
+                <th>Note</th>
+                <th>Target Moria</th>
                 <th>Target Freq</th>
-                <th>Your Accuracy</th>
+                <th>Your Run Performance</th>
             </tr>
         </thead>
-        <tbody id="analysisBody">
-            </tbody>
+        <tbody id="analysisBody"></tbody>
     </table>
 </div>
 
 <script>
     const recordBtn = document.getElementById('recordBtn');
-    const toneSelect = document.getElementById('toneSelect');
     const basePitchSelect = document.getElementById('basePitch');
-    const liveNote = document.getElementById('liveNote');
-    const liveFreq = document.getElementById('liveFreq');
-    const deviationPointer = document.getElementById('deviationPointer');
-    const deviationText = document.getElementById('deviationText');
     const analysisBody = document.getElementById('analysisBody');
+    const currentDetected = document.getElementById('currentDetected');
 
-    let audioCtx, analyser, globalStream, animationFrameId;
-    let isListening = false;
+    let audioCtx, analyser, stream, animationId;
+    let isRunning = false;
 
-    // Byzantine 72 Moria System Constants
-    // Tone I Diatonic steps starting from ΠΑ: ΠΑ(0), ΒΟΥ(10), ΓΑ(18), ΔΙ(30), ΚΕ(42), ΖΩ(52), ΝΗ(60), ΠΑ'(72)
-    const diatonicScale = [
-        { name: "ΠΑ (Base)", step: 0 },
-        { name: "ΒΟΥ", step: 10 },
-        { name: "ΓΑ", step: 8 },
-        { name: "ΔΙ", step: 12 },
-        { name: "ΚΕ", step: 12 },
-        { name: "ΖΩ", step: 10 },
-        { name: "ΝΗ", step: 8 },
-        { name: "ΠΑ'", step: 12 }
+    // Scale mapping structure (Moria cumulative counts)
+    const steps = [
+        { name: "ΠΑ", moria: 0 },
+        { name: "ΒΟΥ", moria: 10 },
+        { name: "ΓΑ", moria: 18 },
+        { name: "ΔΙ", moria: 30 },
+        { name: "ΚΕ", moria: 42 },
+        { name: "ΖΩ", moria: 52 },
+        { name: "ΝΗ", moria: 60 },
+        { name: "ΠΑ’", moria: 72 }
     ];
 
-    function calculateTargetFrequencies() {
-        const baseFreq = parseFloat(basePitchSelect.value);
-        analysisBody.innerHTML = "";
-        
-        let cumulativeMoria = 0;
-        diatonicScale.forEach((note, index) => {
-            cumulativeMoria += note.step;
-            
-            // Frequency calculation based on log-interval system of 72 Moria per octave
-            // Freq = Base * 2^(Moria / 72)
-            const targetFreq = baseFreq * Math.pow(2, cumulativeMoria / 72);
-            note.targetFreq = targetFreq;
-            note.cumulativeMoria = cumulativeMoria;
+    // Storage array to record the deviations across the scale execution run
+    let scaleRunData = {};
 
+    function initTable() {
+        const base = parseFloat(basePitchSelect.value);
+        analysisBody.innerHTML = "";
+        steps.forEach((step, idx) => {
+            const targetF = base * Math.pow(2, step.moria / 72);
+            scaleRunData[idx] = []; // Clear old data arrays
+            
             const row = document.createElement('tr');
-            row.id = `note-row-${index}`;
             row.innerHTML = `
-                <td><strong>${note.name}</strong></td>
-                <td>${note.step === 0 ? '-' : note.step}</td>
-                <td>${cumulativeMoria}</td>
-                <td>${targetFreq.toFixed(1)} Hz</td>
-                <td class="accuracy-cell" id="accuracy-${index}">-</td>
+                <td><strong>${step.name}</strong></td>
+                <td>${step.moria}</td>
+                <td>${targetF.toFixed(1)} Hz</td>
+                <td id="score-${idx}" class="untracked">Not detected yet</td>
             `;
             analysisBody.appendChild(row);
         });
     }
 
-    // Initialize layout tables
-    calculateTargetFrequencies();
-    basePitchSelect.addEventListener('change', calculateTargetFrequencies);
+    initTable();
+    basePitchSelect.addEventListener('change', initTable);
 
     recordBtn.addEventListener('click', async () => {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        if (!isListening) {
+        if (!isRunning) {
+            initTable(); // Reset visual grid
             try {
-                globalStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const source = audioCtx.createMediaStreamSource(globalStream);
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                const source = audioCtx.createMediaStreamSource(stream);
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 2048;
+                analyser.fftSize = 1024; // Faster sampling windows for fluid reaction tracking
                 source.connect(analyser);
-
-                isListening = true;
-                recordBtn.innerText = "🛑 Stop Tracking";
-                recordBtn.classList.add('recording');
                 
-                trackPitch();
-            } catch (err) {
-                alert("Microphone error: " + err.message);
+                isRunning = true;
+                recordBtn.innerText = "🛑 Stop & Calculate Scorecard";
+                recordBtn.classList.add('recording');
+                currentDetected.innerText = "Listening... Sing scale now";
+                
+                processRun();
+            } catch(e) {
+                alert("Microphone capture failed.");
             }
         } else {
-            isListening = false;
-            recordBtn.innerText = "🎤 Start Listening & Analyzing";
+            isRunning = false;
+            recordBtn.innerText = "🎤 Start Scale Run";
             recordBtn.classList.remove('recording');
-            cancelAnimationFrame(animationFrameId);
-            if (globalStream) globalStream.getTracks().forEach(track => track.stop());
+            currentDetected.innerText = "Calculated!";
+            cancelAnimationFrame(animationId);
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            
+            finalizeScorecard();
         }
     });
 
-    function trackPitch() {
-        if (!isListening) return;
-        animationFrameId = requestAnimationFrame(trackPitch);
+    function processRun() {
+        if (!isRunning) return;
+        animationId = requestAnimationFrame(processRun);
 
-        const bufferLength = analyser.fftSize;
-        const buffer = new Float32Array(bufferLength);
+        const buffer = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(buffer);
 
-        // Core Pitch Detection: Autocorrelation algorithm (YIN/AMDF light fallback)
-        const sampleRate = audioCtx.sampleRate;
-        const r = autoCorrelate(buffer, sampleRate);
-
-        if (r !== -1 && r > 60 && r < 1000) { // Limit vocal registers
-            liveFreq.innerText = `${r.toFixed(1)} Hz`;
-            evaluateByzantinePitch(r);
+        const freq = detectFundamentalFast(buffer, audioCtx.sampleRate);
+        if (freq > 0) {
+            matchNoteToScaleData(freq);
         }
     }
 
-    function autoCorrelate(buffer, sampleRate) {
-        let SIZE = buffer.length;
-        let maxSamples = Math.floor(SIZE / 2);
-        let bestOffset = -1;
-        let bestCorrelation = 0;
-        let rms = 0;
+    // High-speed auto-correlation logic for instant pitch tracking response
+    function detectFundamentalFast(buffer, sampleRate) {
+        let size = buffer.length;
+        let sum = 0;
+        for (let i = 0; i < size; i++) sum += buffer[i] * buffer[i];
+        if (Math.sqrt(sum / size) < 0.015) return -1; // Volume gate filter
 
-        for (let i = 0; i < SIZE; i++) {
-            let val = buffer[i];
-            rms += val * val;
-        }
-        rms = Math.sqrt(rms / SIZE);
-        if (rms < 0.01) return -1; // Audio too quiet
+        let bestPeriod = -1;
+        let bestCorrelation = -1;
 
-        let r1 = 0, r2 = SIZE - 1, thres = 0.2;
-        for (let i = 0; i < maxSamples; i++) {
-            if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
-        }
-        for (let i = SIZE - 1; i >= maxSamples; i--) {
-            if (Math.abs(buffer[i]) < thres) { r2 = i; break; }
-        }
-        buffer = buffer.slice(r1, r2);
-        SIZE = buffer.length;
+        // Scan vocal frequency bounds (approx 70Hz - 600Hz)
+        let minPeriod = Math.floor(sampleRate / 600);
+        let maxPeriod = Math.floor(sampleRate / 70);
 
-        let correlations = new Float32Array(maxSamples);
-        for (let offset = 0; offset < maxSamples; offset++) {
+        for (let period = minPeriod; period < maxPeriod; period++) {
             let correlation = 0;
-            for (let i = 0; i < maxSamples; i++) {
-                correlation += Math.abs((buffer[i]) - (buffer[i + offset]));
+            for (let i = 0; i < size - period; i++) {
+                correlation += buffer[i] * buffer[i + period];
             }
-            correlations[offset] = correlation;
-        }
-        
-        let minVal = 1000, minOffset = -1;
-        for (let i = 1; i < maxSamples; i++) {
-            if (correlations[i] < minVal) {
-                minVal = correlations[i];
-                minOffset = i;
+            if (correlation > bestCorrelation) {
+                bestCorrelation = correlation;
+                bestPeriod = period;
             }
         }
-
-        if (minOffset !== -1) {
-            return sampleRate / minOffset;
-        }
-        return -1;
+        return bestPeriod !== -1 ? (sampleRate / bestPeriod) : -1;
     }
 
-    function evaluateByzantinePitch(currentFreq) {
-        const baseFreq = parseFloat(basePitchSelect.value);
-        
-        // Find current total Moria distance from base
-        // Moria = 72 * log2(CurrentFreq / BaseFreq)
-        const currentMoria = 72 * Math.log2(currentFreq / baseFreq);
+    function matchNoteToScaleData(freq) {
+        const base = parseFloat(basePitchSelect.value);
+        const calculatedMoria = 72 * Math.log2(freq / base);
 
-        // Map to closest note structure
-        let closestNoteIndex = 0;
+        let closestIdx = -1;
         let minDiff = 999;
 
-        diatonicScale.forEach((note, index) => {
-            let diff = Math.abs(currentMoria - note.cumulativeMoria);
-            if (diff < minDiff) {
+        steps.forEach((step, idx) => {
+            let diff = Math.abs(calculatedMoria - step.moria);
+            if (diff < minDiff && diff < 5) { // 5 Moria snapping threshold boundary
                 minDiff = diff;
-                closestNoteIndex = index;
+                closestIdx = idx;
             }
         });
 
-        const targetNote = diatonicScale[closestNoteIndex];
-        const moriaDeviation = currentMoria - targetNote.cumulativeMoria;
-
-        // UI Feedback updates
-        liveNote.innerText = targetNote.name;
-        
-        // Dynamic Pointer positioning (-3 to +3 Moria deviation spectrum mapping)
-        let percent = 50 + (moriaDeviation * 16.6); // Scale to visual bounds
-        percent = Math.max(5, Math.min(95, percent));
-        deviationPointer.style.left = `${percent}%`;
-
-        const cell = document.getElementById(`accuracy-${closestNoteIndex}`);
-        
-        // Critical Thresholds for Microtones
-        // 1 Moria unit is approximately 16.6 cents. 
-        if (Math.abs(moriaDeviation) < 0.4) {
-            deviationText.innerText = "Perfect Intonation!";
-            cell.innerText = "Accurate";
-            cell.className = "accuracy-cell status-perfect";
-        } else if (moriaDeviation >= 0.4) {
-            deviationText.innerText = `Sharp (+${moriaDeviation.toFixed(1)} Moria)`;
-            cell.innerText = "Sharp";
-            cell.className = "accuracy-cell status-sharp";
-        } else {
-            deviationText.innerText = `Flat (${moriaDeviation.toFixed(1)} Moria)`;
-            cell.innerText = "Flat";
-            cell.className = "accuracy-cell status-flat";
+        if (closestIdx !== -1) {
+            const deviation = calculatedMoria - steps[closestIdx].moria;
+            scaleRunData[closestIdx].push(deviation);
+            currentDetected.innerText = `Singing: ${steps[closestIdx].name} (${freq.toFixed(1)} Hz)`;
+            
+            // Mark cell visually as currently being recorded
+            document.getElementById(`score-${closestIdx}`).innerText = "Recording pitch data...";
+            document.getElementById(`score-${closestIdx}`).className = "";
         }
+    }
+
+    function finalizeScorecard() {
+        steps.forEach((step, idx) => {
+            const dataset = scaleRunData[idx];
+            const cell = document.getElementById(`score-${idx}`);
+            
+            if (dataset.length === 0) {
+                cell.innerText = "Skipped / Unregistered";
+                cell.className = "untracked";
+                return;
+            }
+
+            // Calculate median filter value to drop outlier notes caused by shifting vocal frames
+            dataset.sort((a, b) => a - b);
+            const avgDeviation = dataset[Math.floor(dataset.length / 2)];
+
+            if (Math.abs(avgDeviation) <= 0.4) {
+                cell.innerText = "Accurate ✔";
+                cell.className = "status-perfect";
+            } else if (avgDeviation > 0.4) {
+                cell.innerText = `Sharp (+${avgDeviation.toFixed(1)} Moria)`;
+                cell.className = "status-sharp";
+            } else {
+                cell.innerText = `Flat (${avgDeviation.toFixed(1)} Moria)`;
+                cell.className = "status-flat";
+            }
+        });
     }
 </script>
 </body>
