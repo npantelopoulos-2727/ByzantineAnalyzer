@@ -97,7 +97,20 @@
             if (!isRecording) {
                 // Start Recording & Analyzing
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                    // Replace the old getUserMedia line with this:
+                    const getAudioStream = navigator.mediaDevices?.getUserMedia || 
+                                           navigator.webkitGetUserMedia || 
+                                           navigator.mozGetUserMedia;
+                    
+                    if (!getAudioStream) {
+                        statusText.innerText = "Error: Your browser does not support audio recording.";
+                        return;
+                    }
+                    
+                    // const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
                     
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     const source = audioCtx.createMediaStreamSource(stream);
