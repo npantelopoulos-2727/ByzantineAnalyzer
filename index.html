@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Interval Trainer</title>
+    <title>Byzantine Anchored Interval Trainer</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -17,7 +17,7 @@
         }
         .container {
             width: 100%;
-            max-width: 650px;
+            max-width: 750px;
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -25,6 +25,17 @@
         }
         h2 { color: #8a6d3b; text-align: center; margin-top: 0; }
         
+        .mode-selection {
+            background: #fdfaf4;
+            border: 1px solid #ebdcb9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            color: #8a6d3b;
+        }
+
         .note-keyboard {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -32,8 +43,8 @@
             margin: 20px 0;
         }
         .note-btn {
-            padding: 15px;
-            font-size: 16px;
+            padding: 12px;
+            font-size: 14px;
             font-weight: bold;
             background-color: #f5f0e6;
             border: 2px solid #dfd7ca;
@@ -41,6 +52,10 @@
             cursor: pointer;
             color: #8a6d3b;
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
         .note-btn:hover { background-color: #ede4d3; }
         .note-btn.active {
@@ -48,8 +63,22 @@
             color: white;
             border-color: #843534;
         }
+        .note-btn.anchor-mode-active {
+            border: 2px dashed #8a6d3b;
+            background-color: #fff9e6;
+        }
+        .note-btn.is-anchor {
+            background-color: #3c763d !important;
+            color: white !important;
+            border-color: #2b542c !important;
+        }
         .note-btn.has-pitch {
             border-left: 5px solid #3c763d;
+        }
+        .anchor-indicator {
+            font-size: 10px;
+            text-transform: uppercase;
+            opacity: 0.8;
         }
 
         .display-box {
@@ -65,57 +94,72 @@
         #liveStatus { font-size: 18px; font-weight: 500; }
 
         .analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .analysis-table th, .analysis-table td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
+        .analysis-table th, .analysis-table td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 13px; }
         .analysis-table th { background-color: #f5f0e6; color: #8a6d3b; }
+        .anchor-row { background-color: #edf7ed !important; font-weight: bold; }
         
         .status-perfect { color: #3c763d; font-weight: bold; }
         .status-sharp { color: #a94442; font-weight: bold; }
         .status-flat { color: #31708f; font-weight: bold; }
         
-        .reset-btn {
-            width: 100%; padding: 10px; background: #777; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 15px;
-        }
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .action-btn { flex: 1; padding: 12px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; color: white; }
+        #setAnchorBtn { background: #8a6d3b; }
+        #setAnchorBtn.active { background: #ffcc00; color: #111; }
+        #resetBtn { background: #777; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Byzantine Microtonal Interval Analyzer</h2>
-    <p style="font-size:14px; color:#666; text-align:center;">
-        <strong>Step 1:</strong> Click <strong>ΠΑ (Base)</strong> and sing your reference pitch to calibrate. <br>
-        <strong>Step 2:</strong> Click any other note button and sing it to analyze its interval accuracy.
+    <h2>Byzantine Modular Anchor Analyzer</h2>
+    
+    <div class="mode-selection">
+        Current Operational Mode: <span id="modeDisplay">Standard Listening</span>
+    </div>
+
+    <p style="font-size:14px; color:#666; text-align:center; margin-top: 0;">
+        <strong>How to calibrate:</strong> Click <strong>"Set Custom Anchor Note"</strong>, select your desired baseline note below (e.g., ΠΑ), and sing to set its reference pitch. Then turn off anchor mode to test all other intervals.
     </p>
 
     <div class="note-keyboard">
-        <button class="note-btn" onclick="selectNote(0)">ΠΑ (Base)</button>
-        <button class="note-btn" onclick="selectNote(1)">ΒΟΥ</button>
-        <button class="note-btn" onclick="selectNote(2)">ΓΑ</button>
-        <button class="note-btn" onclick="selectNote(3)">ΔΙ</button>
-        <button class="note-btn" onclick="selectNote(4)">ΚΕ</button>
-        <button class="note-btn" onclick="selectNote(5)">ΖΩ</button>
-        <button class="note-btn" onclick="selectNote(6)">ΝΗ</button>
-        <button class="note-btn" onclick="selectNote(7)">ΠΑ’</button>
+        <button class="note-btn" id="btn-0" onclick="handleNoteClick(0)"><span>δι (Low)</span><span class="anchor-indicator" id="ind-0"></span></button>
+        <button class="note-btn" id="btn-1" onclick="handleNoteClick(1)"><span>κε</span><span class="anchor-indicator" id="ind-1"></span></button>
+        <button class="note-btn" id="btn-2" onclick="handleNoteClick(2)"><span>ζω</span><span class="anchor-indicator" id="ind-2"></span></button>
+        <button class="note-btn" id="btn-3" onclick="handleNoteClick(3)"><span>ΝΗ</span><span class="anchor-indicator" id="ind-3"></span></button>
+        <button class="note-btn" id="btn-4" onclick="handleNoteClick(4)"><span>ΠΑ</span><span class="anchor-indicator" id="ind-4"></span></button>
+        <button class="note-btn" id="btn-5" onclick="handleNoteClick(5)"><span>ΒΟΥ</span><span class="anchor-indicator" id="ind-5"></span></button>
+        <button class="note-btn" id="btn-6" onclick="handleNoteClick(6)"><span>ΓΑ</span><span class="anchor-indicator" id="ind-6"></span></button>
+        <button class="note-btn" id="btn-7" onclick="handleNoteClick(7)"><span>ΔΙ</span><span class="anchor-indicator" id="ind-7"></span></button>
+        <button class="note-btn" id="btn-8" onclick="handleNoteClick(8)"><span>ΚΕ</span><span class="anchor-indicator" id="ind-8"></span></button>
+        <button class="note-btn" id="btn-9" onclick="handleNoteClick(9)"><span>ΖΩ΄</span><span class="anchor-indicator" id="ind-9"></span></button>
+        <button class="note-btn" id="btn-10" onclick="handleNoteClick(10)"><span>ΝΗ΄</span><span class="anchor-indicator" id="ind-10"></span></button>
+        <button class="note-btn" id="btn-11" onclick="handleNoteClick(11)"><span>ΠΑ’ (High)</span><span class="anchor-indicator" id="ind-11"></span></button>
     </div>
 
     <div class="display-box">
-        <div id="liveTarget">Select a target note above</div>
+        <div id="liveTarget">Select a note step above to begin</div>
         <div id="livePitch">-- Hz</div>
-        <div id="liveStatus">Awaiting audio input...</div>
+        <div id="liveStatus">Awaiting audio context initialization...</div>
     </div>
 
     <table class="analysis-table">
         <thead>
             <tr>
                 <th>Note Name</th>
-                <th>Target Scale (Moria)</th>
-                <th>Calibrated Pitch</th>
-                <th>Interval Deviation vs ΠΑ</th>
+                <th>Step Interval</th>
+                <th>Cumulative Moria</th>
+                <th>Registered Pitch</th>
+                <th>Interval Status</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
     
-    <button class="reset-btn" onclick="resetSession()">Clear Session / Recalibrate</button>
+    <div class="btn-row">
+        <button id="setAnchorBtn" class="action-btn" onclick="toggleAnchorSelectionMode()">⚓ Set Custom Anchor Note</button>
+        <button id="resetBtn" class="action-btn" onclick="resetSession()">Reset All Pitches</button>
+    </div>
 </div>
 
 <script>
@@ -123,41 +167,99 @@
     const livePitch = document.getElementById('livePitch');
     const liveStatus = document.getElementById('liveStatus');
     const tableBody = document.getElementById('tableBody');
+    const setAnchorBtn = document.getElementById('setAnchorBtn');
+    const modeDisplay = document.getElementById('modeDisplay');
 
-    let audioCtx, analyser, stream, animationId;
+    let audioCtx, analyser, stream;
     let activeNoteIdx = null;
+    let anchorNoteIdx = 4; // Defaults to ΠΑ as the initial structural benchmark
+    let isSelectingAnchor = false;
 
     const scaleConfig = [
-        { name: "ΠΑ", moria: 0 },
-        { name: "ΒΟΥ", moria: 10 },
-        { name: "ΓΑ", moria: 18 },
-        { name: "ΔΙ", moria: 30 },
-        { name: "ΚΕ", moria: 42 },
-        { name: "ΖΩ", moria: 52 },
-        { name: "ΝΗ", moria: 60 },
-        { name: "ΠΑ’", moria: 72 }
+        { name: "δι (Low)", step: 0 },
+        { name: "κε", step: 12 },
+        { name: "ζω", step: 10 },
+        { name: "ΝΗ", step: 8 },
+        { name: "ΠΑ", step: 12 },
+        { name: "ΒΟΥ", step: 10 },
+        { name: "ΓΑ", step: 8 },
+        { name: "ΔΙ", step: 12 },
+        { name: "ΚΕ", step: 12 },
+        { name: "ΖΩ΄", step: 10 },
+        { name: "ΝΗ΄", step: 8 },
+        { name: "ΠΑ’ (High)", step: 12 }
     ];
 
-    let registeredPitches = Array(8).fill(null);
+    let cumulative = 0;
+    scaleConfig.forEach(note => {
+        cumulative += note.step;
+        note.cumulativeMoria = cumulative;
+    });
+
+    let registeredPitches = Array(12).fill(null);
 
     function initTable() {
         tableBody.innerHTML = "";
         scaleConfig.forEach((note, idx) => {
             const row = document.createElement('tr');
             row.id = `row-${idx}`;
+            if (idx === anchorNoteIdx) row.className = "anchor-row";
             row.innerHTML = `
                 <td><strong>${note.name}</strong></td>
-                <td>${note.moria} Moria</td>
+                <td>${note.step === 0 ? '-' : note.step}</td>
+                <td>${note.cumulativeMoria}</td>
                 <td id="pitch-val-${idx}">-</td>
-                <td id="status-val-${idx}">-</td>
+                <td id="status-val-${idx}">${idx === anchorNoteIdx ? "Primary Anchor" : "-"}</td>
             `;
             tableBody.appendChild(row);
         });
+        updateKeyboardVisuals();
     }
+
+    function updateKeyboardVisuals() {
+        scaleConfig.forEach((_, idx) => {
+            const btn = document.getElementById(`btn-${idx}`);
+            const ind = document.getElementById(`ind-${idx}`);
+            
+            btn.classList.remove('is-anchor', 'anchor-mode-active');
+            ind.innerText = "";
+
+            if (idx === anchorNoteIdx) {
+                btn.classList.add('is-anchor');
+                ind.innerText = "[Anchor]";
+            } else if (isSelectingAnchor) {
+                btn.classList.add('anchor-mode-active');
+                ind.innerText = "?";
+            }
+        });
+    }
+
     initTable();
 
-    async function selectNote(idx) {
-        // Safe check browser audio context initialization
+    function toggleAnchorSelectionMode() {
+        isSelectingAnchor = !isSelectingAnchor;
+        if (isSelectingAnchor) {
+            setAnchorBtn.classList.add('active');
+            setAnchorBtn.innerText = "Selecting Anchor... Click Note Below";
+            modeDisplay.innerText = "Assigning New Base Anchor Tone";
+        } else {
+            setAnchorBtn.classList.remove('active');
+            setAnchorBtn.innerText = "⚓ Set Custom Anchor Note";
+            modeDisplay.innerText = "Standard Listening";
+        }
+        updateKeyboardVisuals();
+    }
+
+    async function handleNoteClick(idx) {
+        if (isSelectingAnchor) {
+            anchorNoteIdx = idx;
+            toggleAnchorSelectionMode();
+            initTable();
+            liveTarget.innerText = `Calibrating New Anchor: ${scaleConfig[idx].name}`;
+            liveStatus.innerText = "Sing into the microphone to set anchor base pitch...";
+        }
+        
+        // Connect system audio stream context safely
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             try {
@@ -168,18 +270,18 @@
                 source.connect(analyser);
                 pitchLoop();
             } catch(e) {
-                alert("Microphone configuration blocked.");
+                alert("Microphone connection blocked.");
                 return;
             }
         }
 
-        // Manage active button element changes
-        const buttons = document.querySelectorAll('.note-btn');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        
-        activeNoteIdx = idx;
-        buttons[idx].classList.add('active');
-        liveTarget.innerText = `Target Focus: ${scaleConfig[idx].name}`;
+        if (!isSelectingAnchor) {
+            const buttons = document.querySelectorAll('.note-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            activeNoteIdx = idx;
+            document.getElementById(`btn-${idx}`).classList.add('active');
+            liveTarget.innerText = `Target Focus: ${scaleConfig[idx].name}`;
+        }
     }
 
     function pitchLoop() {
@@ -190,42 +292,40 @@
         analyser.getFloatTimeDomainData(buffer);
 
         const freq = autoCorrelate(buffer, audioCtx.sampleRate);
-        if (freq > 0 && freq < 650) {
+        if (freq > 0 && freq < 700) {
             livePitch.innerText = `${freq.toFixed(1)} Hz`;
             
-            // Store the detected pitch instantly
             registeredPitches[activeNoteIdx] = freq;
             document.getElementById(`pitch-val-${activeNoteIdx}`).innerText = `${freq.toFixed(1)} Hz`;
-            document.querySelectorAll('.note-btn')[activeNoteIdx].classList.add('has-pitch');
+            document.getElementById(`btn-${activeNoteIdx}`).classList.add('has-pitch');
             
             evaluateIntervals();
         }
     }
 
     function evaluateIntervals() {
-        const basePa = registeredPitches[0]; // Core denominator pitch
+        const basePitch = registeredPitches[anchorNoteIdx];
+        const baseMoria = scaleConfig[anchorNoteIdx].cumulativeMoria;
+
+        if (!basePitch) {
+            liveStatus.innerText = `Please select and sing the Anchor Note [${scaleConfig[anchorNoteIdx].name}] first to establish base pitch tuning framework.`;
+            return;
+        }
         
         scaleConfig.forEach((note, idx) => {
             const currentPitch = registeredPitches[idx];
             const statusCell = document.getElementById(`status-val-${idx}`);
 
-            if (idx === 0 && basePa) {
-                statusCell.innerText = "Base Calibrated";
+            if (idx === anchorNoteIdx) {
+                statusCell.innerText = "Anchor Base Reference";
                 statusCell.className = "status-perfect";
-                if(activeNoteIdx === 0) liveStatus.innerText = "Base Reference Set!";
-                return;
-            }
-
-            if (!basePa) {
-                statusCell.innerText = "Calibrate ΠΑ First";
-                if(idx === activeNoteIdx) liveStatus.innerText = "Please sing your base ΠΑ first.";
                 return;
             }
 
             if (currentPitch) {
-                // Formula: 72 * log2(Note Frequency / Base Frequency)
-                const calculatedMoria = 72 * Math.log2(currentPitch / basePa);
-                const deviation = calculatedMoria - note.moria;
+                const logRatioMoria = 72 * Math.log2(currentPitch / basePitch);
+                const expectedMoriaDistance = note.cumulativeMoria - baseMoria;
+                const deviation = logRatioMoria - expectedMoriaDistance;
 
                 let outputText = "";
                 if (Math.abs(deviation) <= 0.5) {
@@ -248,16 +348,15 @@
     }
 
     function resetSession() {
-        registeredPitches = Array(8).fill(null);
+        registeredPitches = Array(12).fill(null);
         activeNoteIdx = null;
         livePitch.innerText = "-- Hz";
-        liveTarget.innerText = "Select a target note above";
+        liveTarget.innerText = "Select a note step above";
         liveStatus.innerText = "Awaiting audio input...";
         
         const buttons = document.querySelectorAll('.note-btn');
         buttons.forEach(btn => {
-            btn.classList.remove('active');
-            btn.classList.remove('has-pitch');
+            btn.classList.remove('active', 'has-pitch');
         });
         initTable();
     }
@@ -266,11 +365,11 @@
         let size = buffer.length;
         let sum = 0;
         for (let i = 0; i < size; i++) sum += buffer[i] * buffer[i];
-        if (Math.sqrt(sum / size) < 0.025) return -1; // Volume sensitivity filter
+        if (Math.sqrt(sum / size) < 0.025) return -1;
 
         let bestPeriod = -1, bestCorrelation = -1;
-        let minPeriod = Math.floor(sampleRate / 500);
-        let maxPeriod = Math.floor(sampleRate / 80);
+        let minPeriod = Math.floor(sampleRate / 550);
+        let maxPeriod = Math.floor(sampleRate / 75);
 
         for (let period = minPeriod; period < maxPeriod; period++) {
             let correlation = 0;
