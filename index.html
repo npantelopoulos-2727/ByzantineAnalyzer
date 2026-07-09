@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Speech & Pitch Analyzer</title>
+    <title>Byzantine Interval Trainer</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -23,242 +23,250 @@
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        h2 { color: #8a6d3b; margin-top: 0; text-align: center; }
-        button { width: 100%; padding: 15px; font-size: 16px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; color: white; background-color: #a94442; }
-        button.recording { background-color: #2e6da4; }
+        h2 { color: #8a6d3b; text-align: center; margin-top: 0; }
         
-        .status-box {
-            display: flex;
-            justify-content: space-between;
+        .note-keyboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .note-btn {
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #f5f0e6;
+            border: 2px solid #dfd7ca;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #8a6d3b;
+            transition: all 0.2s;
+        }
+        .note-btn:hover { background-color: #ede4d3; }
+        .note-btn.active {
+            background-color: #a94442;
+            color: white;
+            border-color: #843534;
+        }
+        .note-btn.has-pitch {
+            border-left: 5px solid #3c763d;
+        }
+
+        .display-box {
             background: #111;
-            color: #fff;
+            color: white;
             padding: 20px;
             border-radius: 8px;
-            margin: 20px 0;
-            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
         }
-        .status-panel { flex: 1; text-align: center; border-right: 1px solid #333; }
-        .status-panel:last-child { border: none; }
-        .val { font-size: 32px; font-weight: bold; color: #ffcc00; margin-top: 5px; }
+        #liveTarget { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        #livePitch { font-size: 42px; font-weight: bold; color: #ffcc00; margin: 5px 0; }
+        #liveStatus { font-size: 18px; font-weight: 500; }
 
-        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .analysis-table th, .analysis-table td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
         .analysis-table th { background-color: #f5f0e6; color: #8a6d3b; }
         
-        .status-perfect { background-color: #dff0d8; color: #3c763d; font-weight: bold; }
-        .status-sharp { background-color: #f2dede; color: #a94442; font-weight: bold; }
-        .status-flat { background-color: #d9edf7; color: #31708f; font-weight: bold; }
+        .status-perfect { color: #3c763d; font-weight: bold; }
+        .status-sharp { color: #a94442; font-weight: bold; }
+        .status-flat { color: #31708f; font-weight: bold; }
+        
+        .reset-btn {
+            width: 100%; padding: 10px; background: #777; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 15px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Byzantine Voice & Pitch Analyzer</h2>
-    <p style="font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">
-        Enunciate the note name clearly as you sing it (e.g., sing and hold <strong>"ΠΑ"</strong>, then sing and hold <strong>"ΚΕ"</strong>).
+    <h2>Byzantine Microtonal Interval Analyzer</h2>
+    <p style="font-size:14px; color:#666; text-align:center;">
+        <strong>Step 1:</strong> Click <strong>ΠΑ (Base)</strong> and sing your reference pitch to calibrate. <br>
+        <strong>Step 2:</strong> Click any other note button and sing it to analyze its interval accuracy.
     </p>
 
-    <button id="startBtn">🎤 Start Voice Recognition & Tuning</button>
+    <div class="note-keyboard">
+        <button class="note-btn" onclick="selectNote(0)">ΠΑ (Base)</button>
+        <button class="note-btn" onclick="selectNote(1)">ΒΟΥ</button>
+        <button class="note-btn" onclick="selectNote(2)">ΓΑ</button>
+        <button class="note-btn" onclick="selectNote(3)">ΔΙ</button>
+        <button class="note-btn" onclick="selectNote(4)">ΚΕ</button>
+        <button class="note-btn" onclick="selectNote(5)">ΖΩ</button>
+        <button class="note-btn" onclick="selectNote(6)">ΝΗ</button>
+        <button class="note-btn" onclick="selectNote(7)">ΠΑ’</button>
+    </div>
 
-    <div class="status-box">
-        <div class="status-panel">
-            <div>Syllable Heard</div>
-            <div id="speechVal" class="val">--</div>
-        </div>
-        <div class="status-panel">
-            <div>Live Pitch</div>
-            <div id="pitchVal" class="val">0.0 Hz</div>
-        </div>
+    <div class="display-box">
+        <div id="liveTarget">Select a target note above</div>
+        <div id="livePitch">-- Hz</div>
+        <div id="liveStatus">Awaiting audio input...</div>
     </div>
 
     <table class="analysis-table">
         <thead>
             <tr>
                 <th>Note Name</th>
-                <th>Target Interval (Moria)</th>
-                <th>Registered Pitch</th>
-                <th>Interval Accuracy vs ΠΑ</th>
+                <th>Target Scale (Moria)</th>
+                <th>Calibrated Pitch</th>
+                <th>Interval Deviation vs ΠΑ</th>
             </tr>
         </thead>
-        <tbody id="analysisBody"></tbody>
+        <tbody id="tableBody"></tbody>
     </table>
+    
+    <button class="reset-btn" onclick="resetSession()">Clear Session / Recalibrate</button>
 </div>
 
 <script>
-    const startBtn = document.getElementById('startBtn');
-    const speechVal = document.getElementById('speechVal');
-    const pitchVal = document.getElementById('pitchVal');
-    const analysisBody = document.getElementById('analysisBody');
+    const liveTarget = document.getElementById('liveTarget');
+    const livePitch = document.getElementById('livePitch');
+    const liveStatus = document.getElementById('liveStatus');
+    const tableBody = document.getElementById('tableBody');
 
-    let audioCtx, analyser, stream, animationId, recognition;
-    let isRunning = false;
-    let currentLivePitch = 0;
+    let audioCtx, analyser, stream, animationId;
+    let activeNoteIdx = null;
 
-    // Byzantine structure mappings
-    const noteConfig = {
-        "ΠΑ":  { idx: 0, targetMoria: 0,   aliases: ["πα", "pa", "par", "bar"] },
-        "ΒΟΥ": { idx: 1, targetMoria: 10,  aliases: ["βου", "βού", "vou", "bou", "vu", "bu"] },
-        "ΓΑ":  { idx: 2, targetMoria: 18,  aliases: ["γα", "γά", "ga", "gar"] },
-        "ΔΙ":  { idx: 3, targetMoria: 30,  aliases: ["δι", "δί", "di", "the", "dee"] },
-        "ΚΕ":  { idx: 4, targetMoria: 42,  aliases: ["κε", "κέ", "ke", "kay", "keh"] },
-        "ΖΩ":  { idx: 5, targetMoria: 52,  aliases: ["ζω", "ζώ", "zo", "zoe"] },
-        "ΝΗ":  { idx: 6, targetMoria: 60,  aliases: ["νη", "νή", "ni", "nee"] },
-        "ΠΑ2": { idx: 7, targetMoria: 72,  aliases: ["πα υψηλό", "πα2", "pa2"] }
-    };
+    const scaleConfig = [
+        { name: "ΠΑ", moria: 0 },
+        { name: "ΒΟΥ", moria: 10 },
+        { name: "ΓΑ", moria: 18 },
+        { name: "ΔΙ", moria: 30 },
+        { name: "ΚΕ", moria: 42 },
+        { name: "ΖΩ", moria: 52 },
+        { name: "ΝΗ", moria: 60 },
+        { name: "ΠΑ’", moria: 72 }
+    ];
 
-    // Keep track of what frequencies the singer registers during the session
-    let sessionPitches = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null };
+    let registeredPitches = Array(8).fill(null);
 
-    function renderTable() {
-        analysisBody.innerHTML = "";
-        Object.keys(noteConfig).forEach(key => {
-            const config = noteConfig[key];
-            const displayName = key === "ΠΑ2" ? "ΠΑ’ (High)" : key;
+    function initTable() {
+        tableBody.innerHTML = "";
+        scaleConfig.forEach((note, idx) => {
             const row = document.createElement('tr');
-            row.id = `row-${config.idx}`;
+            row.id = `row-${idx}`;
             row.innerHTML = `
-                <td><strong>${displayName}</strong></td>
-                <td>${config.targetMoria} Moria</td>
-                <td id="pitch-${config.idx}">-</td>
-                <td id="status-${config.idx}">Sing & Enunciate...</td>
+                <td><strong>${note.name}</strong></td>
+                <td>${note.moria} Moria</td>
+                <td id="pitch-val-${idx}">-</td>
+                <td id="status-val-${idx}">-</td>
             `;
-            analysisBody.appendChild(row);
+            tableBody.appendChild(row);
         });
     }
-    renderTable();
+    initTable();
 
-    // Initialize Web Speech Engine
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        // Support both Greek and English speech parameters natively
-        recognition.lang = 'el-GR'; 
-
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal || event.results[i][0].confidence > 0.3) {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            processSpeechInput(interimTranscript.toLowerCase());
-        };
-    }
-
-    startBtn.addEventListener('click', async () => {
-        if (!SpeechRecognition) {
-            alert("Speech recognition is not supported in this browser. Please use Google Chrome.");
-            return;
-        }
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        if (!isRunning) {
+    async function selectNote(idx) {
+        // Safe check browser audio context initialization
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const source = audioCtx.createMediaStreamSource(stream);
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 2048;
                 source.connect(analyser);
-
-                isRunning = true;
-                startBtn.innerText = "🛑 Stop Session";
-                startBtn.classList.add('recording');
-                
-                recognition.start();
                 pitchLoop();
-            } catch (e) {
-                alert("Microphone configuration error.");
+            } catch(e) {
+                alert("Microphone configuration blocked.");
+                return;
             }
-        } else {
-            isRunning = false;
-            startBtn.innerText = "🎤 Start Voice Recognition & Tuning";
-            startBtn.classList.remove('recording');
-            recognition.stop();
-            cancelAnimationFrame(animationId);
-            if (stream) stream.getTracks().forEach(t => t.stop());
         }
-    });
+
+        // Manage active button element changes
+        const buttons = document.querySelectorAll('.note-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        activeNoteIdx = idx;
+        buttons[idx].classList.add('active');
+        liveTarget.innerText = `Target Focus: ${scaleConfig[idx].name}`;
+    }
 
     function pitchLoop() {
-        if (!isRunning) return;
-        animationId = requestAnimationFrame(pitchLoop);
+        requestAnimationFrame(pitchLoop);
+        if (activeNoteIdx === null) return;
 
         const buffer = new Float32Array(analyser.fftSize);
         analyser.getFloatTimeDomainData(buffer);
-        
+
         const freq = autoCorrelate(buffer, audioCtx.sampleRate);
-        if (freq > 0 && freq < 700) {
-            currentLivePitch = freq;
-            pitchVal.innerText = `${freq.toFixed(1)} Hz`;
+        if (freq > 0 && freq < 650) {
+            livePitch.innerText = `${freq.toFixed(1)} Hz`;
+            
+            // Store the detected pitch instantly
+            registeredPitches[activeNoteIdx] = freq;
+            document.getElementById(`pitch-val-${activeNoteIdx}`).innerText = `${freq.toFixed(1)} Hz`;
+            document.querySelectorAll('.note-btn')[activeNoteIdx].classList.add('has-pitch');
+            
+            evaluateIntervals();
         }
     }
 
-    function processSpeechInput(transcript) {
-        Object.keys(noteConfig).forEach(noteKey => {
-            const config = noteConfig[noteKey];
-            
-            // Check if any phonetic aliases match what the engine transcribed
-            const matched = config.aliases.some(alias => transcript.includes(alias));
-            
-            if (matched && currentLivePitch > 0) {
-                speechVal.innerText = noteKey === "ΠΑ2" ? "ΠΑ’" : noteKey;
-                
-                // Store the captured pitch for this named note
-                sessionPitches[config.idx] = currentLivePitch;
-                document.getElementById(`pitch-${config.idx}`).innerText = `${currentLivePitch.toFixed(1)} Hz`;
-
-                calculateIntervalRelations();
-            }
-        });
-    }
-
-    function calculateIntervalRelations() {
-        const paPitch = sessionPitches[0]; // Base reference point ΠΑ
+    function evaluateIntervals() {
+        const basePa = registeredPitches[0]; // Core denominator pitch
         
-        Object.keys(noteConfig).forEach(noteKey => {
-            const config = noteConfig[noteKey];
-            const currentNotePitch = sessionPitches[config.idx];
-            const statusCell = document.getElementById(`status-${config.idx}`);
+        scaleConfig.forEach((note, idx) => {
+            const currentPitch = registeredPitches[idx];
+            const statusCell = document.getElementById(`status-val-${idx}`);
 
-            if (config.idx === 0 && paPitch) {
-                statusCell.innerText = "Base Reference Locked";
+            if (idx === 0 && basePa) {
+                statusCell.innerText = "Base Calibrated";
                 statusCell.className = "status-perfect";
+                if(activeNoteIdx === 0) liveStatus.innerText = "Base Reference Set!";
                 return;
             }
 
-            if (!paPitch) {
-                statusCell.innerText = "Waiting for base ΠΑ pitch...";
+            if (!basePa) {
+                statusCell.innerText = "Calibrate ΠΑ First";
+                if(idx === activeNoteIdx) liveStatus.innerText = "Please sing your base ΠΑ first.";
                 return;
             }
 
-            if (currentNotePitch) {
-                // Determine true structural ratio distance using: 72 * log2(Note / Base)
-                const measuredMoriaInterval = 72 * Math.log2(currentNotePitch / paPitch);
-                const targetMoriaInterval = config.targetMoria;
-                const deviation = measuredMoriaInterval - targetMoriaInterval;
+            if (currentPitch) {
+                // Formula: 72 * log2(Note Frequency / Base Frequency)
+                const calculatedMoria = 72 * Math.log2(currentPitch / basePa);
+                const deviation = calculatedMoria - note.moria;
 
+                let outputText = "";
                 if (Math.abs(deviation) <= 0.5) {
-                    statusCell.innerText = `In Tune! (True Step: ${measuredMoriaInterval.toFixed(1)} Moria)`;
+                    outputText = "Accurate ✔";
                     statusCell.className = "status-perfect";
                 } else if (deviation > 0.5) {
-                    statusCell.innerText = `Sharp (+${deviation.toFixed(1)} Moria)`;
+                    outputText = `Sharp (+${deviation.toFixed(1)} Moria)`;
                     statusCell.className = "status-sharp";
                 } else {
-                    statusCell.innerText = `Flat (${deviation.toFixed(1)} Moria)`;
+                    outputText = `Flat (${deviation.toFixed(1)} Moria)`;
                     statusCell.className = "status-flat";
+                }
+
+                statusCell.innerText = outputText;
+                if (idx === activeNoteIdx) {
+                    liveStatus.innerText = `${note.name}: ${outputText}`;
                 }
             }
         });
     }
 
-    // High fidelity fundamental pitch locator algorithm
+    function resetSession() {
+        registeredPitches = Array(8).fill(null);
+        activeNoteIdx = null;
+        livePitch.innerText = "-- Hz";
+        liveTarget.innerText = "Select a target note above";
+        liveStatus.innerText = "Awaiting audio input...";
+        
+        const buttons = document.querySelectorAll('.note-btn');
+        buttons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.remove('has-pitch');
+        });
+        initTable();
+    }
+
     function autoCorrelate(buffer, sampleRate) {
         let size = buffer.length;
         let sum = 0;
         for (let i = 0; i < size; i++) sum += buffer[i] * buffer[i];
-        if (Math.sqrt(sum / size) < 0.02) return -1;
+        if (Math.sqrt(sum / size) < 0.025) return -1; // Volume sensitivity filter
 
         let bestPeriod = -1, bestCorrelation = -1;
         let minPeriod = Math.floor(sampleRate / 500);
