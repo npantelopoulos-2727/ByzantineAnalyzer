@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Dynamic Anchor Analyzer</title>
+    <title>Universal Byzantine Tone & Interval Master</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -17,23 +17,41 @@
         }
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 850px;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
-        h2 { color: #8a6d3b; text-align: center; margin-top: 0; }
+        h2 { color: #8a6d3b; text-align: center; margin-top: 0; margin-bottom: 5px; }
+        .subtitle { text-align: center; font-size: 14px; color: #666; margin-bottom: 20px; }
         
-        .mode-selection {
+        .control-panel {
             background: #fdfaf4;
             border: 1px solid #ebdcb9;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
-            color: #8a6d3b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .selector-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        label { font-weight: bold; color: #8a6d3b; font-size: 14px; }
+        select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #dfd7ca;
+            background: white;
+            color: #333;
+            flex: 1;
+            max-width: 400px;
         }
 
         .note-keyboard {
@@ -58,28 +76,10 @@
             gap: 4px;
         }
         .note-btn:hover { background-color: #ede4d3; }
-        .note-btn.active {
-            background-color: #a94442;
-            color: white;
-            border-color: #843534;
-        }
-        .note-btn.anchor-mode-active {
-            border: 2px dashed #8a6d3b;
-            background-color: #fff9e6;
-        }
-        .note-btn.is-anchor {
-            background-color: #3c763d !important;
-            color: white !important;
-            border-color: #2b542c !important;
-        }
-        .note-btn.has-pitch {
-            border-left: 5px solid #3c763d;
-        }
-        .anchor-indicator {
-            font-size: 10px;
-            text-transform: uppercase;
-            opacity: 0.8;
-        }
+        .note-btn.active { background-color: #a94442; color: white; border-color: #843534; }
+        .note-btn.is-anchor { background-color: #3c763d !important; color: white !important; border-color: #2b542c !important; }
+        .note-btn.has-pitch { border-left: 5px solid #3c763d; }
+        .anchor-indicator { font-size: 10px; text-transform: uppercase; opacity: 0.8; }
 
         .display-box {
             background: #111;
@@ -112,30 +112,27 @@
 <body>
 
 <div class="container">
-    <h2>Byzantine Dynamic Pitch Matrix</h2>
+    <h2>Byzantine Omnichord Interval Master</h2>
+    <div class="subtitle">Multi-Genre Octoechos Trainer (72 Moria Scale Architecture)</div>
     
-    <div class="mode-selection">
-        Current Operational Mode: <span id="modeDisplay">Standard Listening</span>
+    <div class="control-panel">
+        <div class="selector-row">
+            <label for="toneSelect">Select Byzantine Echos (Tone):</label>
+            <select id="toneSelect" onchange="loadTonePreset()">
+                <option value="tone1">Tone 1 / Plagal 1 (Soft Diatonic - Base ΠΑ)</option>
+                <option value="tone4">Tone 4 (Diatonic Variant - Base ΔΙ)</option>
+                <option value="tone8">Plagal 4 / Tone 8 (Standard Diatonic - Base ΝΗ)</option>
+                <option value="tone2">Tone 2 (Soft Chromatic - Base ΔΙ)</option>
+                <option value="tone6">Plagal 2 (Hard Chromatic - Base ΠΑ)</option>
+                <option value="tone3">Tone 3 / Grave (Enharmonic - Base ΓΑ)</option>
+            </select>
+        </div>
+        <div style="font-size: 12px; color: #777; line-height: 1.4;" id="presetInfo">
+            Loading configuration data...
+        </div>
     </div>
 
-    <p style="font-size:14px; color:#666; text-align:center; margin-top: 0;">
-        <strong>Calibration Workflow:</strong> Click <strong>"Set Custom Anchor Note"</strong>, select your target reference point below, and sing it to instantly map out the required frequency targets for the whole scale.
-    </p>
-
-    <div class="note-keyboard">
-        <button class="note-btn" id="btn-0" onclick="handleNoteClick(0)"><span>δι (Low)</span><span class="anchor-indicator" id="ind-0"></span></button>
-        <button class="note-btn" id="btn-1" onclick="handleNoteClick(1)"><span>κε</span><span class="anchor-indicator" id="ind-1"></span></button>
-        <button class="note-btn" id="btn-2" onclick="handleNoteClick(2)"><span>ζω</span><span class="anchor-indicator" id="ind-2"></span></button>
-        <button class="note-btn" id="btn-3" onclick="handleNoteClick(3)"><span>ΝΗ</span><span class="anchor-indicator" id="ind-3"></span></button>
-        <button class="note-btn" id="btn-4" onclick="handleNoteClick(4)"><span>ΠΑ</span><span class="anchor-indicator" id="ind-4"></span></button>
-        <button class="note-btn" id="btn-5" onclick="handleNoteClick(5)"><span>ΒΟΥ</span><span class="anchor-indicator" id="ind-5"></span></button>
-        <button class="note-btn" id="btn-6" onclick="handleNoteClick(6)"><span>ΓΑ</span><span class="anchor-indicator" id="ind-6"></span></button>
-        <button class="note-btn" id="btn-7" onclick="handleNoteClick(7)"><span>ΔΙ</span><span class="anchor-indicator" id="ind-7"></span></button>
-        <button class="note-btn" id="btn-8" onclick="handleNoteClick(8)"><span>ΚΕ</span><span class="anchor-indicator" id="ind-8"></span></button>
-        <button class="note-btn" id="btn-9" onclick="handleNoteClick(9)"><span>ΖΩ΄</span><span class="anchor-indicator" id="ind-9"></span></button>
-        <button class="note-btn" id="btn-10" onclick="handleNoteClick(10)"><span>ΝΗ΄</span><span class="anchor-indicator" id="ind-10"></span></button>
-        <button class="note-btn" id="btn-11" onclick="handleNoteClick(11)"><span>ΠΑ’ (High)</span><span class="anchor-indicator" id="ind-11"></span></button>
-    </div>
+    <div class="note-keyboard" id="keyboardContainer"></div>
 
     <div class="display-box">
         <div id="liveTarget">Select a note step above to begin</div>
@@ -164,52 +161,145 @@
 </div>
 
 <script>
+    const keyboardContainer = document.getElementById('keyboardContainer');
+    const tableBody = document.getElementById('tableBody');
+    const toneSelect = document.getElementById('toneSelect');
+    const presetInfo = document.getElementById('presetInfo');
     const liveTarget = document.getElementById('liveTarget');
     const livePitch = document.getElementById('livePitch');
     const liveStatus = document.getElementById('liveStatus');
-    const tableBody = document.getElementById('tableBody');
     const setAnchorBtn = document.getElementById('setAnchorBtn');
-    const modeDisplay = document.getElementById('modeDisplay');
 
     let audioCtx, analyser, stream;
     let activeNoteIdx = null;
-    let anchorNoteIdx = 4; // Defaults to ΠΑ as initial anchor reference
+    let anchorNoteIdx = 4; // Dynamic structural zero target index
     let isSelectingAnchor = false;
+    
+    // Comprehensive Structural Database of the Octoechos Genera Scales
+    const tonePresets = {
+        tone1: {
+            info: "Soft Diatonic Genus (Tones 1 & 5). Scale path emphasizes structural step ratios of 12-10-8 intervals based from root ΠΑ.",
+            anchorDefault: 4, // ΠΑ
+            notes: [
+                { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 10 }, { name: "ΝΗ", step: 8 },
+                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 10 }, { name: "ΓΑ", step: 8 }, { name: "ΔΙ", step: 12 },
+                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 10 }, { name: "ΝΗ΄", step: 8 }, { name: "ΠΑ’", step: 12 }
+            ]
+        },
+        tone4: {
+            info: "Diatonic Legatos / Agia Variation (Tone 4). Structural center shifts reference directly onto ΔΙ with standard microtonal steps.",
+            anchorDefault: 7, // ΔΙ
+            notes: [
+                { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 12 }, { name: "ΝΗ", step: 6 },
+                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 12 }, { name: "ΓΑ", step: 6 }, { name: "ΔΙ", step: 12 },
+                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 12 }, { name: "ΝΗ΄", step: 6 }, { name: "ΠΑ’", step: 12 }
+            ]
+        },
+        tone8: {
+            info: "Standard Diatonic Scale (Tone 8 / Plagal 4). Classic fundamental structural layout centered around base anchor root ΝΗ.",
+            anchorDefault: 3, // ΝΗ
+            notes: [
+                { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 12 }, { name: "ΝΗ", step: 6 },
+                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 10 }, { name: "ΓΑ", step: 8 }, { name: "ΔΙ", step: 12 },
+                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 10 }, { name: "ΝΗ΄", step: 8 }, { name: "ΠΑ’", step: 12 }
+            ]
+        },
+        tone2: {
+            info: "Soft Chromatic Genus (Tone 2). Distinct intervals characterized by highly condensed steps of 7-14-7 Moria clusters centered on ΔΙ.",
+            anchorDefault: 7, // ΔΙ
+            notes: [
+                { name: "δι (Low)", step: 0 }, { name: "κε", step: 7 },  { name: "ζω", step: 14 }, { name: "ΝΗ", step: 7 },
+                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 7 },  { name: "ΓΑ", step: 14 }, { name: "ΔΙ", step: 7 },
+                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 7 },  { name: "ΝΗ΄", step: 14 }, { name: "ΠΑ’", step: 7 }
+            ]
+        },
+        tone6: {
+            info: "Hard Chromatic Genus (Plagal 2). Sharp dramatic intervals built out of striking 6-20-4 Moria steps relative to reference ΠΑ.",
+            anchorDefault: 4, // ΠΑ
+            notes: [
+                { name: "δι (Low)", step: 0 }, { name: "κε", step: 6 },  { name: "ζω", step: 20 }, { name: "ΝΗ", step: 4 },
+                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 6 },  { name: "ΓΑ", step: 20 }, { name: "ΔΙ", step: 4 },
+                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 6 },  { name: "ΝΗ΄", step: 20 }, { name: "ΠΑ’", step: 4 }
+            ]
+        },
+        tone3: {
+            info: "Enharmonic Genus (Tone 3 / Grave Tone Varys). Employs crisp structural major blocks of 12-12-6 Moria structures from base ΓΑ.",
+            anchorDefault: 6, // ΓΑ
+            notes: [
+                { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 12 }, { name: "ΝΗ", step: 6 },
+                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 12 }, { name: "ΓΑ", step: 6 }, { name: "ΔΙ", step: 12 },
+                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 12 }, { name: "ΝΗ΄", step: 6 }, { name: "ΠΑ’", step: 12 }
+            ]
+        }
+    };
 
-    const scaleConfig = [
-        { name: "δι (Low)", step: 0 },
-        { name: "κε", step: 12 },
-        { name: "ζω", step: 10 },
-        { name: "ΝΗ", step: 8 },
-        { name: "ΠΑ", step: 12 },
-        { name: "ΒΟΥ", step: 10 },
-        { name: "ΓΑ", step: 8 },
-        { name: "ΔΙ", step: 12 },
-        { name: "ΚΕ", step: 12 },
-        { name: "ΖΩ΄", step: 10 },
-        { name: "ΝΗ΄", step: 8 },
-        { name: "ΠΑ’ (High)", step: 12 }
-    ];
+    let activeScale = [];
+    let registeredPitches = [];
 
-    let cumulative = 0;
-    scaleConfig.forEach(note => {
-        cumulative += note.step;
-        note.cumulativeMoria = cumulative;
-    });
+    function loadTonePreset() {
+        const selected = toneSelect.value;
+        const preset = tonePresets[selected];
+        
+        presetInfo.innerText = preset.info;
+        anchorNoteIdx = preset.anchorDefault;
+        activeScale = JSON.parse(JSON.stringify(preset.notes));
+        
+        // Dynamically compile structural Moria values from absolute zero
+        let cumulative = 0;
+        activeScale.forEach(note => {
+            cumulative += note.step;
+            note.cumulativeMoria = cumulative;
+        });
 
-    let registeredPitches = Array(12).fill(null);
+        registeredPitches = Array(activeScale.length).fill(null);
+        activeNoteIdx = null;
+        
+        buildKeyboardLayout();
+        renderTable();
+    }
+
+    function buildKeyboardLayout() {
+        keyboardContainer.innerHTML = "";
+        activeScale.forEach((note, idx) => {
+            const btn = document.createElement('button');
+            btn.className = "note-btn";
+            btn.id = `btn-${idx}`;
+            btn.onclick = () => handleNoteClick(idx);
+            btn.innerHTML = `<span>${note.name}</span><span class="anchor-indicator" id="ind-${idx}"></span>`;
+            keyboardContainer.appendChild(btn);
+        });
+        updateKeyboardVisuals();
+    }
+
+    function updateKeyboardVisuals() {
+        activeScale.forEach((_, idx) => {
+            const btn = document.getElementById(`btn-${idx}`);
+            const ind = document.getElementById(`ind-${idx}`);
+            if (!btn) return;
+            
+            btn.classList.remove('is-anchor', 'anchor-mode-active');
+            ind.innerText = "";
+
+            if (idx === anchorNoteIdx) {
+                btn.classList.add('is-anchor');
+                ind.innerText = "[Anchor]";
+            } else if (isSelectingAnchor) {
+                btn.classList.add('anchor-mode-active');
+                ind.innerText = "?";
+            }
+        });
+    }
 
     function renderTable() {
         tableBody.innerHTML = "";
         const anchorPitch = registeredPitches[anchorNoteIdx];
-        const anchorMoria = scaleConfig[anchorNoteIdx].cumulativeMoria;
+        const anchorMoria = activeScale[anchorNoteIdx].cumulativeMoria;
 
-        scaleConfig.forEach((note, idx) => {
+        activeScale.forEach((note, idx) => {
             const row = document.createElement('tr');
             row.id = `row-${idx}`;
             if (idx === anchorNoteIdx) row.className = "anchor-row";
 
-            // Dynamically calculate the theoretical target frequency based on the anchor pitch
             let calculatedTargetDisplay = "-";
             if (anchorPitch) {
                 const targetFreq = anchorPitch * Math.pow(2, (note.cumulativeMoria - anchorMoria) / 72);
@@ -231,36 +321,14 @@
         updateKeyboardVisuals();
     }
 
-    function updateKeyboardVisuals() {
-        scaleConfig.forEach((_, idx) => {
-            const btn = document.getElementById(`btn-${idx}`);
-            const ind = document.getElementById(`ind-${idx}`);
-            
-            btn.classList.remove('is-anchor', 'anchor-mode-active');
-            ind.innerText = "";
-
-            if (idx === anchorNoteIdx) {
-                btn.classList.add('is-anchor');
-                ind.innerText = "[Anchor]";
-            } else if (isSelectingAnchor) {
-                btn.classList.add('anchor-mode-active');
-                ind.innerText = "?";
-            }
-        });
-    }
-
-    renderTable();
-
     function toggleAnchorSelectionMode() {
         isSelectingAnchor = !isSelectingAnchor;
         if (isSelectingAnchor) {
             setAnchorBtn.classList.add('active');
-            setAnchorBtn.innerText = "Selecting Anchor... Click Note Below";
-            modeDisplay.innerText = "Assigning New Base Anchor Tone";
+            setAnchorBtn.innerText = "Click note button to lock as new reference...";
         } else {
             setAnchorBtn.classList.remove('active');
             setAnchorBtn.innerText = "⚓ Set Custom Anchor Note";
-            modeDisplay.innerText = "Standard Listening";
         }
         updateKeyboardVisuals();
     }
@@ -270,8 +338,8 @@
             anchorNoteIdx = idx;
             toggleAnchorSelectionMode();
             renderTable();
-            liveTarget.innerText = `Calibrating New Anchor: ${scaleConfig[idx].name}`;
-            liveStatus.innerText = "Sing into the microphone to set anchor base pitch...";
+            liveTarget.innerText = `Calibrating Anchor: ${activeScale[idx].name}`;
+            return;
         }
         
         if (!audioCtx) {
@@ -284,18 +352,16 @@
                 source.connect(analyser);
                 pitchLoop();
             } catch(e) {
-                alert("Microphone connection blocked.");
+                alert("Microphone integration failed.");
                 return;
             }
         }
 
-        if (!isSelectingAnchor) {
-            const buttons = document.querySelectorAll('.note-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            activeNoteIdx = idx;
-            document.getElementById(`btn-${idx}`).classList.add('active');
-            liveTarget.innerText = `Target Focus: ${scaleConfig[idx].name}`;
-        }
+        const buttons = document.querySelectorAll('.note-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        activeNoteIdx = idx;
+        document.getElementById(`btn-${idx}`).classList.add('active');
+        liveTarget.innerText = `Target Focus: ${activeScale[idx].name}`;
     }
 
     function pitchLoop() {
@@ -313,27 +379,26 @@
             document.getElementById(`pitch-val-${activeNoteIdx}`).innerText = `${freq.toFixed(1)} Hz`;
             document.getElementById(`btn-${activeNoteIdx}`).classList.add('has-pitch');
             
-            // Re-render the table to push target conversions immediately if the anchor note was just captured
             if (activeNoteIdx === anchorNoteIdx) {
                 renderTable();
             }
-            
             evaluateIntervals();
         }
     }
 
     function evaluateIntervals() {
         const basePitch = registeredPitches[anchorNoteIdx];
-        const baseMoria = scaleConfig[anchorNoteIdx].cumulativeMoria;
+        const baseMoria = activeScale[anchorNoteIdx].cumulativeMoria;
 
         if (!basePitch) {
-            liveStatus.innerText = `Please select and sing the Anchor Note [${scaleConfig[anchorNoteIdx].name}] first to establish base pitch tuning framework.`;
+            liveStatus.innerText = `Please sing the Anchor [${activeScale[anchorNoteIdx].name}] first to establish tuning baseline.`;
             return;
         }
         
-        scaleConfig.forEach((note, idx) => {
+        activeScale.forEach((note, idx) => {
             const currentPitch = registeredPitches[idx];
             const statusCell = document.getElementById(`status-val-${idx}`);
+            if (!statusCell) return;
 
             if (idx === anchorNoteIdx) {
                 statusCell.innerText = "Anchor Base Reference";
@@ -347,10 +412,10 @@
                 const deviation = logRatioMoria - expectedMoriaDistance;
 
                 let outputText = "";
-                if (Math.abs(deviation) <= 0.5) {
+                if (Math.abs(deviation) <= 0.6) {
                     outputText = "Accurate ✔";
                     statusCell.className = "status-perfect";
-                } else if (deviation > 0.5) {
+                } else if (deviation > 0.6) {
                     outputText = `Sharp (+${deviation.toFixed(1)} Moria)`;
                     statusCell.className = "status-sharp";
                 } else {
@@ -367,16 +432,15 @@
     }
 
     function resetSession() {
-        registeredPitches = Array(12).fill(null);
+        const selected = toneSelect.value;
+        registeredPitches = Array(tonePresets[selected].notes.length).fill(null);
         activeNoteIdx = null;
         livePitch.innerText = "-- Hz";
         liveTarget.innerText = "Select a note step above";
         liveStatus.innerText = "Awaiting audio input...";
         
         const buttons = document.querySelectorAll('.note-btn');
-        buttons.forEach(btn => {
-            btn.classList.remove('active', 'has-pitch');
-        });
+        buttons.forEach(btn => btn.classList.remove('active', 'has-pitch'));
         renderTable();
     }
 
@@ -402,6 +466,9 @@
         }
         return bestPeriod !== -1 ? (sampleRate / bestPeriod) : -1;
     }
+
+    // Run primary configuration load automatically on initialization
+    window.onload = loadTonePreset;
 </script>
 </body>
 </html>
