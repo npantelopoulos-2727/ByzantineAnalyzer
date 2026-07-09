@@ -172,14 +172,13 @@
 
     let audioCtx, analyser, stream;
     let activeNoteIdx = null;
-    let anchorNoteIdx = 4; // Dynamic structural zero target index
+    let anchorNoteIdx = 4; 
     let isSelectingAnchor = false;
     
-    // Comprehensive Structural Database of the Octoechos Genera Scales
     const tonePresets = {
         tone1: {
             info: "Soft Diatonic Genus (Tones 1 & 5). Scale path emphasizes structural step ratios of 12-10-8 intervals based from root ΠΑ.",
-            anchorDefault: 4, // ΠΑ
+            anchorDefault: 4, 
             notes: [
                 { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 10 }, { name: "ΝΗ", step: 8 },
                 { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 10 }, { name: "ΓΑ", step: 8 }, { name: "ΔΙ", step: 12 },
@@ -188,7 +187,7 @@
         },
         tone4: {
             info: "Diatonic Legatos / Agia Variation (Tone 4). Structural center shifts reference directly onto ΔΙ with standard microtonal steps.",
-            anchorDefault: 7, // ΔΙ
+            anchorDefault: 7, 
             notes: [
                 { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 12 }, { name: "ΝΗ", step: 6 },
                 { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 12 }, { name: "ΓΑ", step: 6 }, { name: "ΔΙ", step: 12 },
@@ -197,7 +196,7 @@
         },
         tone8: {
             info: "Standard Diatonic Scale (Tone 8 / Plagal 4). Classic fundamental structural layout centered around base anchor root ΝΗ.",
-            anchorDefault: 3, // ΝΗ
+            anchorDefault: 3, 
             notes: [
                 { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 12 }, { name: "ΝΗ", step: 6 },
                 { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 10 }, { name: "ΓΑ", step: 8 }, { name: "ΔΙ", step: 12 },
@@ -205,17 +204,26 @@
             ]
         },
         tone2: {
-            info: "Soft Chromatic Genus (Tone 2). Distinct intervals characterized by highly condensed steps of 7-14-7 Moria clusters centered on ΔΙ.",
+            info: "Soft Chromatic Genus (Tone 2). Fixed with correct historical structural intervals: 8-14-8-8-14-8-12-8-14-8-12.",
             anchorDefault: 7, // ΔΙ
             notes: [
-                { name: "δι (Low)", step: 0 }, { name: "κε", step: 7 },  { name: "ζω", step: 14 }, { name: "ΝΗ", step: 7 },
-                { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 7 },  { name: "ΓΑ", step: 14 }, { name: "ΔΙ", step: 7 },
-                { name: "ΚΕ", step: 12 }, { name: "ΖΩ΄", step: 7 },  { name: "ΝΗ΄", step: 14 }, { name: "ΠΑ’", step: 7 }
+                { name: "δι (Low)", step: 0 }, 
+                { name: "κε", step: 8 },  
+                { name: "ζω", step: 14 }, 
+                { name: "ΝΗ", step: 8 },
+                { name: "ΠΑ", step: 8 }, 
+                { name: "ΒΟΥ", step: 14 },  
+                { name: "ΓΑ", step: 8 }, 
+                { name: "ΔΙ", step: 12 },
+                { name: "ΚΕ", step: 8 }, 
+                { name: "ΖΩ΄", step: 14 },  
+                { name: "ΝΗ΄", step: 8 }, 
+                { name: "ΠΑ’", step: 12 }
             ]
         },
         tone6: {
             info: "Hard Chromatic Genus (Plagal 2). Sharp dramatic intervals built out of striking 6-20-4 Moria steps relative to reference ΠΑ.",
-            anchorDefault: 4, // ΠΑ
+            anchorDefault: 4, 
             notes: [
                 { name: "δι (Low)", step: 0 }, { name: "κε", step: 6 },  { name: "ζω", step: 20 }, { name: "ΝΗ", step: 4 },
                 { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 6 },  { name: "ΓΑ", step: 20 }, { name: "ΔΙ", step: 4 },
@@ -224,7 +232,7 @@
         },
         tone3: {
             info: "Enharmonic Genus (Tone 3 / Grave Tone Varys). Employs crisp structural major blocks of 12-12-6 Moria structures from base ΓΑ.",
-            anchorDefault: 6, // ΓΑ
+            anchorDefault: 6, 
             notes: [
                 { name: "δι (Low)", step: 0 }, { name: "κε", step: 12 }, { name: "ζω", step: 12 }, { name: "ΝΗ", step: 6 },
                 { name: "ΠΑ", step: 12 }, { name: "ΒΟΥ", step: 12 }, { name: "ΓΑ", step: 6 }, { name: "ΔΙ", step: 12 },
@@ -244,7 +252,6 @@
         anchorNoteIdx = preset.anchorDefault;
         activeScale = JSON.parse(JSON.stringify(preset.notes));
         
-        // Dynamically compile structural Moria values from absolute zero
         let cumulative = 0;
         activeScale.forEach(note => {
             cumulative += note.step;
@@ -467,7 +474,6 @@
         return bestPeriod !== -1 ? (sampleRate / bestPeriod) : -1;
     }
 
-    // Run primary configuration load automatically on initialization
     window.onload = loadTonePreset;
 </script>
 </body>
