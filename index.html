@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Byzantine Anchored Interval Trainer</title>
+    <title>Byzantine Dynamic Anchor Analyzer</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -17,7 +17,7 @@
         }
         .container {
             width: 100%;
-            max-width: 750px;
+            max-width: 800px;
             background: white;
             padding: 20px;
             border-radius: 10px;
@@ -112,14 +112,14 @@
 <body>
 
 <div class="container">
-    <h2>Byzantine Modular Anchor Analyzer</h2>
+    <h2>Byzantine Dynamic Pitch Matrix</h2>
     
     <div class="mode-selection">
         Current Operational Mode: <span id="modeDisplay">Standard Listening</span>
     </div>
 
     <p style="font-size:14px; color:#666; text-align:center; margin-top: 0;">
-        <strong>How to calibrate:</strong> Click <strong>"Set Custom Anchor Note"</strong>, select your desired baseline note below (e.g., ΠΑ), and sing to set its reference pitch. Then turn off anchor mode to test all other intervals.
+        <strong>Calibration Workflow:</strong> Click <strong>"Set Custom Anchor Note"</strong>, select your target reference point below, and sing it to instantly map out the required frequency targets for the whole scale.
     </p>
 
     <div class="note-keyboard">
@@ -149,7 +149,8 @@
                 <th>Note Name</th>
                 <th>Step Interval</th>
                 <th>Cumulative Moria</th>
-                <th>Registered Pitch</th>
+                <th style="background-color: #ebdcb9; color: #614d27;">Calculated Required Pitch</th>
+                <th>Actual Registered Pitch</th>
                 <th>Interval Status</th>
             </tr>
         </thead>
@@ -172,7 +173,7 @@
 
     let audioCtx, analyser, stream;
     let activeNoteIdx = null;
-    let anchorNoteIdx = 4; // Defaults to ΠΑ as the initial structural benchmark
+    let anchorNoteIdx = 4; // Defaults to ΠΑ as initial anchor reference
     let isSelectingAnchor = false;
 
     const scaleConfig = [
@@ -198,18 +199,32 @@
 
     let registeredPitches = Array(12).fill(null);
 
-    function initTable() {
+    function renderTable() {
         tableBody.innerHTML = "";
+        const anchorPitch = registeredPitches[anchorNoteIdx];
+        const anchorMoria = scaleConfig[anchorNoteIdx].cumulativeMoria;
+
         scaleConfig.forEach((note, idx) => {
             const row = document.createElement('tr');
             row.id = `row-${idx}`;
             if (idx === anchorNoteIdx) row.className = "anchor-row";
+
+            // Dynamically calculate the theoretical target frequency based on the anchor pitch
+            let calculatedTargetDisplay = "-";
+            if (anchorPitch) {
+                const targetFreq = anchorPitch * Math.pow(2, (note.cumulativeMoria - anchorMoria) / 72);
+                calculatedTargetDisplay = `${targetFreq.toFixed(1)} Hz`;
+            }
+
+            const actualPitchDisplay = registeredPitches[idx] ? `${registeredPitches[idx].toFixed(1)} Hz` : "-";
+
             row.innerHTML = `
                 <td><strong>${note.name}</strong></td>
                 <td>${note.step === 0 ? '-' : note.step}</td>
                 <td>${note.cumulativeMoria}</td>
-                <td id="pitch-val-${idx}">-</td>
-                <td id="status-val-${idx}">${idx === anchorNoteIdx ? "Primary Anchor" : "-"}</td>
+                <td style="font-weight: bold; color: #8a6d3b;" id="target-val-${idx}">${calculatedTargetDisplay}</td>
+                <td id="pitch-val-${idx}">${actualPitchDisplay}</td>
+                <td id="status-val-${idx}">${idx === anchorNoteIdx && anchorPitch ? "Anchor Calibrated" : "-"}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -234,7 +249,7 @@
         });
     }
 
-    initTable();
+    renderTable();
 
     function toggleAnchorSelectionMode() {
         isSelectingAnchor = !isSelectingAnchor;
@@ -254,12 +269,11 @@
         if (isSelectingAnchor) {
             anchorNoteIdx = idx;
             toggleAnchorSelectionMode();
-            initTable();
+            renderTable();
             liveTarget.innerText = `Calibrating New Anchor: ${scaleConfig[idx].name}`;
             liveStatus.innerText = "Sing into the microphone to set anchor base pitch...";
         }
         
-        // Connect system audio stream context safely
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             try {
@@ -298,6 +312,11 @@
             registeredPitches[activeNoteIdx] = freq;
             document.getElementById(`pitch-val-${activeNoteIdx}`).innerText = `${freq.toFixed(1)} Hz`;
             document.getElementById(`btn-${activeNoteIdx}`).classList.add('has-pitch');
+            
+            // Re-render the table to push target conversions immediately if the anchor note was just captured
+            if (activeNoteIdx === anchorNoteIdx) {
+                renderTable();
+            }
             
             evaluateIntervals();
         }
@@ -358,7 +377,7 @@
         buttons.forEach(btn => {
             btn.classList.remove('active', 'has-pitch');
         });
-        initTable();
+        renderTable();
     }
 
     function autoCorrelate(buffer, sampleRate) {
